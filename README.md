@@ -1,6 +1,6 @@
 # Linux Multi-Tasks Scheduler
 
-**WORK IN PROGRESS:** This project is currently under development. The code is not yet fully implemented, but the architecture and specifications are well-defined. Contributions are welcome!
+**WORK IN PROGRESS:** This project is currently under development. The code is not yet fully implemented, but the architecture and specifications are well-defined. 
 
 This project is a C-based multi-task scheduler simulator for a Linux-like environment. It allows users to experiment with different scheduling algorithms and analyze their performance based on a given set of processes.
 
@@ -81,7 +81,7 @@ The project uses a set of custom data structures:
 *   **Process:** A struct to store process information (name, arrival time, burst time, priority, state, etc.).
 *   **Queue:** A generic FIFO queue.
 *   **Stack:** A generic LIFO stack.
-*   **Heap:** A min-heap for implementing priority queues.
+*   **Heap:** A min-heap and a max-heap for implementing priority queues.
 
 ## Policy API
 
@@ -98,16 +98,6 @@ The simulator will generate the following outputs:
 ## Testing
 
 The project will have a test suite to verify the correctness of the scheduling algorithms and the simulator's behavior. The tests will be run using the `make test` command.
-
-## How to Contribute
-
-This project is in its early stages, and contributions are highly encouraged. You can contribute by:
-
-*   Implementing the core components of the scheduler engine.
-*   Implementing the scheduling policies.
-*   Implementing the data structures.
-*   Writing tests.
-*   Improving the documentation.
 
 ## License
 
