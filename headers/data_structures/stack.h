@@ -1,6 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <stdbool.h>
+
 #include "process.h"
 
 typedef struct StackNode StackNode;

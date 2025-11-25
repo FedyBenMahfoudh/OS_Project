@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include "data_structures.h"
+
+#include "../../headers/data_structures/data_structures.h"
 
 #define INITIAL_CAPACITY 16
 

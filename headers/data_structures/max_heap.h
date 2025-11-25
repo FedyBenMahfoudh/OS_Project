@@ -1,6 +1,8 @@
 #ifndef MAX_HEAP_H
 #define MAX_HEAP_H
 
+#include <stdbool.h>
+
 #include "process.h"
 
 typedef struct MaxHeapNode MaxHeapNode;

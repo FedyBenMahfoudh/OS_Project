@@ -1,6 +1,8 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
+#include <stdbool.h>
+
 #include "process.h"
 
 typedef struct QueueNode QueueNode;

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "data_structures.h"
+#include "../../headers/data_structures/data_structures.h"
 
 struct StackNode {
     Process* process;
@@ -57,7 +57,7 @@ Process* stack_pop(Stack* s) {
 
 // Peeking at the process that is at the top of the stack (Without removing it)
 Process* stack_peek(const Stack* s) {
-    if (!q->top) return NULL;
+    if (!s->top) return NULL;
     return s->top->process;
 }
 

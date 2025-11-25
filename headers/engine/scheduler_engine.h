@@ -2,19 +2,19 @@
 #ifndef SCHEDULER_ENGINE_H
 #define SCHEDULER_ENGINE_H
 
-// Chargement / initialisation
+// Loading / Initialization
 int sim_init(const char *config_path, const char *policy_name, const char *policy_options);
 
-// Exécute la simulation jusqu'à la fin (bloquant).
+// Executes the simulation till the finish (Can block).
 int sim_run(void);
 
-// Arrête proprement et libère ressources.
+// Stops properly and frees up resources.
 void sim_shutdown(void);
 
-// Obtenir métriques après run
+// Gives metrics after execution finish
 void sim_get_metrics(double *avg_waiting_time, double *avg_turnaround_time, int *throughput);
 
-// Export output (optionnel si sim_run l'a déjà fait)
+// Exports the output (Optional)
 int sim_export_results(const char *outfile_path);
 
 
