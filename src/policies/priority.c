@@ -26,8 +26,10 @@ Policy* priority_policy_create(int quantum) {
         return NULL;
 
     priority_policy->heap = max_heap_create();
-    if (!priority_policy->heap)
-        return NULL;
+    if (!priority_policy->heap) {
+      free(priority_policy);
+      return NULL;
+    }
 
     return priority_policy;
 }
