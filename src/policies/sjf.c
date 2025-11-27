@@ -8,9 +8,9 @@
  * @date 2025
  */
 
-#include "sjf.h"
-#include "../data_structures/min_heap.h" // On a besoin de notre file !
-#include <stdlib.h>                      // Pour malloc/free
+#include "../../headers/policies/sjf.h"
+#include "../../headers/data_structures/min_heap.h" // On a besoin de notre file !
+#include <stdlib.h>                                 // Pour malloc/free
 
 /**
  * @struct Policy
