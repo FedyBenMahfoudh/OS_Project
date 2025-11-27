@@ -20,11 +20,17 @@ struct Policy {
  * @param quantum Unused parameter for this policy, kept for compatibility.
  * @return Pointer to a newly allocated Policy, or NULL on failure.
  */
-// Comparator for Priority Policy (Higher priority value = Higher priority)
+// Comparator for Priority Policy (Higher priority value = Higher priority, earlier arrival time for tie-breaking)
 int priority_comparator(Process* a, Process* b) {
-    if (a->priority < b->priority) return -1;
-    if (a->priority > b->priority) return 1;
-    return 0;
+    // Primary sort: higher priority value first (MaxHeap behavior)
+    if (a->priority != b->priority) {
+        return a->priority - b->priority; // If a->priority is higher, result is positive, a is "greater"
+    }
+
+    // Secondary sort (tie-break): earlier arrival time first
+    // For MaxHeap, if a->arrival_time is earlier, it should be considered "greater"
+    // to be popped first. So, b->arrival_time - a->arrival_time.
+    return b->arrival_time - a->arrival_time;
 }
 
 Policy* priority_policy_create(int quantum) {
