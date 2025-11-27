@@ -9,6 +9,7 @@ struct MinHeap {
     Process** data;
     int size;
     int capacity;
+    Comparator comp;
 };
 
 // Helper function to resize the heap
@@ -34,8 +35,8 @@ static void min_heapify_up(MinHeap* h, int index) {
 
     int parent_index = (index - 1) / 2;
     
-    // Min-Heap based on priority (smaller value = higher priority)
-    if (h->data[index]->priority < h->data[parent_index]->priority) {
+    // Use comparator: if child < parent, swap
+    if (h->comp(h->data[index], h->data[parent_index]) < 0) {
         swap(&h->data[index], &h->data[parent_index]);
         min_heapify_up(h, parent_index);
     }
@@ -47,11 +48,11 @@ static void min_heapify_down(MinHeap* h, int index) {
     int left_child = 2 * index + 1;
     int right_child = 2 * index + 2;
 
-    if (left_child < h->size && h->data[left_child]->priority < h->data[smallest]->priority) {
+    if (left_child < h->size && h->comp(h->data[left_child], h->data[smallest]) < 0) {
         smallest = left_child;
     }
 
-    if (right_child < h->size && h->data[right_child]->priority < h->data[smallest]->priority) {
+    if (right_child < h->size && h->comp(h->data[right_child], h->data[smallest]) < 0) {
         smallest = right_child;
     }
 
@@ -62,7 +63,7 @@ static void min_heapify_down(MinHeap* h, int index) {
 }
 
 // Creating a min heap : Returns a pointer to an empty min heap
-MinHeap* min_heap_create() {
+MinHeap* min_heap_create(Comparator comp) {
     MinHeap* h = (MinHeap*) malloc(sizeof(MinHeap));
     if (!h) return NULL;
 
@@ -74,6 +75,7 @@ MinHeap* min_heap_create() {
 
     h->size = 0;
     h->capacity = INITIAL_CAPACITY;
+    h->comp = comp;
 
     return h;
 }
