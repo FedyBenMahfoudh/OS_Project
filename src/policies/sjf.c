@@ -9,8 +9,8 @@
  */
 
 #include "../../headers/policies/sjf.h"
-#include "../../headers/data_structures/min_heap.h" // On a besoin de notre file !
-#include <stdlib.h>                                 // Pour malloc/free
+#include "../../headers/data_structures/data_structures.h"
+#include <stdlib.h>
 
 /**
  * @struct Policy
@@ -24,6 +24,16 @@ struct Policy
     /** @brief Min-heap data structure storing ready processes sorted by burst time */
     MinHeap *Heap;
 };
+
+/**
+ * @brief Comparator function for SJF (Shortest Job First).
+ * @param a First process.
+ * @param b Second process.
+ * @return <0 if a < b, 0 if a == b, >0 if a > b (based on burst_time).
+ */
+int sjf_comparator(Process* a, Process* b) {
+    return a->burst_time - b->burst_time;
+}
 
 /**
  * @brief Creates and initializes a new SJF policy handle
@@ -45,8 +55,8 @@ Policy *sjf_policy_create(int quantum)
         return NULL; // Échec de l'allocation mémoire
     }
 
-    // 2. Initialiser la file interne
-    sjf_policy->Heap = min_heap_create();
+    // 2. Initialiser la file interne avec le comparateur SJF
+    sjf_policy->Heap = min_heap_create(sjf_comparator);
     if (!sjf_policy->Heap)
     {
         free(sjf_policy); // Nettoyage en cas d'erreur
@@ -91,7 +101,7 @@ void sjf_add_process(Policy *policy, Process *process)
     if (!policy || !process)
         return;
     // Ajouter le processus à la Heap interne
-    min_heap_insert(policy->Heap, process);
+    min_heap_push(policy->Heap, process);
 }
 
 /**
@@ -112,5 +122,5 @@ Process *sjf_get_next_process(Policy *policy)
         return NULL;
     }
     // Récupérer le prochain processus de la Heap interne
-    return min_heap_extract_min(policy->Heap);
+    return min_heap_pop(policy->Heap);
 }

@@ -20,15 +20,22 @@ struct Policy {
  * @param quantum Unused parameter for this policy, kept for compatibility.
  * @return Pointer to a newly allocated Policy, or NULL on failure.
  */
+// Comparator for Priority Policy (Higher priority value = Higher priority)
+int priority_comparator(Process* a, Process* b) {
+    if (a->priority < b->priority) return -1;
+    if (a->priority > b->priority) return 1;
+    return 0;
+}
+
 Policy* priority_policy_create(int quantum) {
     Policy* priority_policy = (Policy*)malloc(sizeof(Policy));
     if (!priority_policy)
         return NULL;
 
-    priority_policy->heap = max_heap_create();
+    priority_policy->heap = max_heap_create(priority_comparator);
     if (!priority_policy->heap) {
-      free(priority_policy);
-      return NULL;
+        free(priority_policy);
+        return NULL;
     }
 
     return priority_policy;

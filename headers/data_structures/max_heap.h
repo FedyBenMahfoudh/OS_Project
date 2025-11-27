@@ -10,8 +10,11 @@ typedef struct MaxHeapNode MaxHeapNode;
 typedef struct MaxHeap MaxHeap;
 
 
+// Comparator function type: returns <0 if a < b, 0 if a == b, >0 if a > b
+typedef int (*Comparator)(Process* a, Process* b);
+
 // Creating a max heap : Returns a pointer to an empty max heap
-MaxHeap* max_heap_create();
+MaxHeap* max_heap_create(Comparator comp);
 
 // Adding a process to the max heap
 void max_heap_push(MaxHeap* h, Process* p);
