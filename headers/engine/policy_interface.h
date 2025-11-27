@@ -1,33 +1,52 @@
-// policy_interface.h
 #ifndef POLICY_INTERFACE_H
 #define POLICY_INTERFACE_H
 
 #include "../data_structures/process.h"
 
-// Opaque Handle representing the intern state of the policy
-typedef struct PolicyHandle PolicyHandle;
+// Forward declaration for the opaque handle.
+// The actual definition will be inside each policy's .c file.
+// e.g., typedef struct { Queue* ready_queue; } FifoPolicy;
+typedef struct Policy Policy;
 
-// Initializing the policy.
-// options: string as "quantum=4;levels=3" (NULL ok)
-PolicyHandle* policy_create(const char *options);
+/**
+ * @brief Creates and initializes a new instance of a policy.
+ *
+ * @param quantum The time quantum for policies like Round Robin. Ignored otherwise.
+ * @return A pointer to the policy's internal state (the handle), or NULL on error.
+ */
+Policy* policy_create(int quantum);
 
-// Called when a process becomes ready (arrival).
-void policy_on_process_arrival(PolicyHandle *ph, Process *proc, int current_time);
+/**
+ * @brief Frees all resources used by the policy.
+ *
+ * @param policy The policy handle to destroy.
+ */
+void policy_destroy(Policy* policy);
 
-// Called every tick (current_time) — For aging.
-void policy_on_time_tick(PolicyHandle *ph, int current_time);
+/**
+ * @brief Adds a process to the policy's data structure.
+ *        Called by the engine when a process becomes READY.
+ *
+ * @param policy The policy handle.
+ * @param process The process that has become ready.
+ */
+void policy_add_process(Policy* policy, Process* process);
 
-// Returns the next process to be executed (or NULL if none).
-Process* policy_select_next(PolicyHandle *ph, int current_time);
+/**
+ * @brief Selects the next process to be executed according to the policy's rules.
+ *
+ * @param policy The policy handle.
+ * @return The process to execute, or NULL if none are ready.
+ */
+Process* policy_get_next_process(Policy* policy);
 
-// Verifies if the currently-running process should be preempted
-// Returns 1 if the preeption is required, otherwise 0.
-int policy_should_preempt(PolicyHandle *ph, Process *current, int current_time);
+/**
+ * @brief (Optional) Notifies the policy that a clock tick has occurred.
+ *        Useful for policies like aging or multi-level feedback queues.
+ *
+ * @param policy The policy handle.
+ */
+void policy_tick(Policy* policy);
 
-// Notifies that the currently-running process finished.
-void policy_on_process_terminated(PolicyHandle *ph, Process *proc, int current_time);
 
-// Frees up the resources.
-void policy_destroy(PolicyHandle *ph);
-
-#endif
+#endif // POLICY_INTERFACE_H
