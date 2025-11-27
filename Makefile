@@ -19,7 +19,7 @@ OBJS = $(SRCS:%.c=build/%.o)
 
 # --- Test Specific Files ---
 # Find all test files in the tests/ directory
-TEST_SRCS = $(shell find tests -name 'test_*.c')
+TEST_SRCS = tests/test_parser.c tests/test_fifo_policy.c tests/test_lifo_policy.c tests/test_priority_policy.c tests/test_sjf_policy.c
 # Create a list of test executables that will be placed in the 'build/' directory
 TEST_TARGETS = $(TEST_SRCS:tests/%.c=build/%)
 
