@@ -36,7 +36,7 @@ int main() {
     printf("Adding %d processes to FIFO policy from '%s':\n", process_count, config_filepath);
     for (int i = 0; i < process_count; i++) {
         printf("  Adding process: %s\n", processes[i].name);
-        fifo_add_process(policy, &processes[i]);
+        fifo_policy_add_process(policy, &processes[i]);
     }
 
     // 4. Retrieve processes and check order
@@ -53,7 +53,7 @@ int main() {
         pass = 0;
     } else {
         for (int i = 0; i < expected_count; i++) {
-            next = fifo_get_next_process(policy);
+            next = fifo_policy_get_next_process(policy);
             printf("Expected: %s, Got: %s\n", expected_order[i], next ? next->name : "(null)");
             if (!next || strcmp(next->name, expected_order[i]) != 0) {
                 pass = 0;
@@ -64,7 +64,7 @@ int main() {
     }
     
     // 5. Check if queue is empty
-    next = fifo_get_next_process(policy);
+    next = fifo_policy_get_next_process(policy);
     if (next != NULL) {
         pass = 0;
         fprintf(stderr, "TEST FAILED: Expected queue to be empty but got a process (%s).\n", next->name);

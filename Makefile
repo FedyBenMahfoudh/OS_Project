@@ -19,7 +19,7 @@ OBJS = $(SRCS:%.c=build/%.o)
 
 # --- Test Specific Files ---
 # Find all test files in the tests/ directory
-TEST_SRCS = tests/test_parser.c tests/test_fifo_policy.c tests/test_lifo_policy.c tests/test_priority_policy.c tests/test_sjf_policy.c
+TEST_SRCS = tests/test_parser.c tests/test_fifo_policy.c tests/test_lifo_policy.c tests/test_priority_policy.c tests/test_sjf_policy.c tests/test_parser_logic.c tests/test_policy_interface.c tests/test_scheduler_engine.c
 # Create a list of test executables that will be placed in the 'build/' directory
 TEST_TARGETS = $(TEST_SRCS:tests/%.c=build/%)
 
@@ -45,15 +45,15 @@ build/%.o: %.c
 # ==============================================================================
 # =                               Test Targets                               =
 # ==============================================================================
-# The 'test' target will run all discovered tests
+# The 'test' target will run all discovered tests, and exit immediately on failure
 test: $(TEST_TARGETS)
 	@echo "🚀  Running all tests..."
 	@for test_exe in $(TEST_TARGETS); do \
 		echo "--- Running test: $$test_exe ---"; \
-		./$$test_exe; \
+		./$$test_exe && printf "  ✅ PASSED\n" || exit 1; \
 		echo ""; \
 	done
-	@echo "✅  All tests passed."
+	@echo "✨  All tests passed."
 
 # Rule to build a test executable.
 # A test executable depends on its own .c file and ALL application .o files (excluding main.o)
