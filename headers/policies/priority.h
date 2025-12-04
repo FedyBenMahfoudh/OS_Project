@@ -5,7 +5,9 @@
 
 Policy* priority_policy_create(int quantum);
 void priority_policy_destroy(Policy* policy);
-void priority_add_process(Policy* policy, Process* process);
-Process* priority_get_next_process(Policy* policy);
+void priority_policy_add_process(Policy* policy, Process* process);
+Process* priority_policy_get_next_process(Policy* policy);
+void priority_policy_tick(Policy* policy);
+bool priority_policy_needs_reschedule(Policy* policy, Process* running_process);
 
 #endif

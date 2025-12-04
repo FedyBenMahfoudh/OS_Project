@@ -58,7 +58,7 @@ void lifo_policy_destroy(Policy* policy) {
  * @param policy The LIFO policy instance
  * @param process The process to be added to the ready queue
  */
-void lifo_add_process(Policy* policy, Process* process) {
+void lifo_policy_add_process(Policy* policy, Process* process) {
     if (!policy || !process) return;
     stack_push(policy->ready_stack, process);
 }
@@ -69,9 +69,16 @@ void lifo_add_process(Policy* policy, Process* process) {
  * @param policy The LIFO policy instance
  * @return Process* The next process to execute, or NULL if no processes are ready
  */
-Process* lifo_get_next_process(Policy* policy) {
+Process* lifo_policy_get_next_process(Policy* policy) {
     if (!policy || stack_is_empty(policy->ready_stack)) {
         return NULL;
     }
     return stack_pop(policy->ready_stack);
+}
+
+void lifo_policy_tick(Policy* policy) {}
+
+bool lifo_policy_needs_reschedule(Policy* policy, Process* running_process) {
+    // Rescheduling only when the process is idle
+    return running_process == NULL;
 }
