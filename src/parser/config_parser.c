@@ -130,6 +130,7 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                 current_process->executed_time = 0;
                 current_process->last_executed_time = 0;
                 current_process->is_preempted = false;
+                current_process->current_quantum_runtime = 0; // Initialize the new field
 
                 // Changing the state of the process
                 state = IN_PROCESS;

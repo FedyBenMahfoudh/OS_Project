@@ -244,10 +244,53 @@ bool policy_needs_reschedule(Policy* policy, Process* running_process) {
             return priority_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         /*
         case POLICY_TYPE_SRT: // Commented out until implemented
-            return srt_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
+            return srt_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         */
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_needs_reschedule.\n", internal_policy->type);
             return true;
+    }
+}
+
+int policy_get_quantum(Policy* policy, Process* process) {
+    if (!policy) return 0;
+    _Policy* internal_policy = (_Policy*)policy;
+
+    switch (internal_policy->type) {
+        case POLICY_TYPE_FIFO:
+            return fifo_policy_get_quantum(internal_policy->concrete_policy_data, process);
+        case POLICY_TYPE_LIFO:
+            return lifo_policy_get_quantum(internal_policy->concrete_policy_data, process);
+        case POLICY_TYPE_SJF:
+            return sjf_policy_get_quantum(internal_policy->concrete_policy_data, process);
+        case POLICY_TYPE_PRIORITY:
+            return priority_policy_get_quantum(internal_policy->concrete_policy_data, process);
+        // Add cases for RR, SRT, MLFQ here later
+        default:
+            return 0; // Default to no quantum
+    }
+}
+
+void policy_demote_process(Policy* policy, Process* process) {
+    if (!policy) return;
+    _Policy* internal_policy = (_Policy*)policy;
+
+    switch (internal_policy->type) {
+        case POLICY_TYPE_FIFO:
+            fifo_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
+        case POLICY_TYPE_LIFO:
+            lifo_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
+        case POLICY_TYPE_SJF:
+            sjf_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
+        case POLICY_TYPE_PRIORITY:
+            priority_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
+        // Add cases for RR, SRT, MLFQ here later
+        default:
+            // Default to no-op
+            break;
     }
 }

@@ -63,5 +63,20 @@ void policy_tick(Policy* policy);
  */
 bool policy_needs_reschedule(Policy* policy, Process* running_process);
 
+/**
+ * @brief Gets the time quantum for a specific process based on the policy's rules.
+ * @param policy The policy handle.
+ * @param process The process to query.
+ * @return The quantum for the process's current priority level, or 0 if not applicable.
+ */
+int policy_get_quantum(Policy* policy, Process* process);
+
+/**
+ * @brief Informs the policy that a process's quantum has expired.
+ *        The policy is responsible for handling the demotion or re-queuing of the process.
+ * @param policy The policy handle.
+ * @param process The process whose quantum expired.
+ */
+void policy_demote_process(Policy* policy, Process* process);
 
 #endif // POLICY_INTERFACE_H

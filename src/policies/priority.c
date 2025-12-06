@@ -114,3 +114,23 @@ bool priority_policy_needs_reschedule(Policy* policy, Process* running_process) 
     // For a non-preemptive priority queue, a reschedule is only needed if the CPU is free.
     return running_process == NULL;
 }
+
+/**
+ * @brief Gets the time quantum for a specific process.
+ * @return 0, as this Priority implementation is not quantum-based.
+ */
+int priority_policy_get_quantum(Policy* policy, Process* process) {
+    (void)policy;
+    (void)process;
+    return 0; // Not applicable
+}
+
+/**
+ * @brief Handles process demotion (quantum expiry).
+ *        Does nothing, as this Priority implementation is not a preemptive quantum-based policy.
+ */
+void priority_policy_demote_process(Policy* policy, Process* process) {
+    // No-op
+    (void)policy;
+    (void)process;
+}

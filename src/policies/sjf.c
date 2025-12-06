@@ -141,3 +141,23 @@ bool sjf_policy_needs_reschedule(Policy* policy, Process* running_process) {
     // For non-preemptive SJF, a reschedule is only needed if the CPU is free.
     return running_process == NULL;
 }
+
+/**
+ * @brief Gets the time quantum for a specific process.
+ * @return 0, as SJF is not a quantum-based policy.
+ */
+int sjf_policy_get_quantum(Policy* policy, Process* process) {
+    (void)policy;
+    (void)process;
+    return 0; // Not applicable
+}
+
+/**
+ * @brief Handles process demotion (quantum expiry).
+ *        Does nothing, as SJF is not a preemptive quantum-based policy.
+ */
+void sjf_policy_demote_process(Policy* policy, Process* process) {
+    // No-op for SJF
+    (void)policy;
+    (void)process;
+}

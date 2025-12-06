@@ -109,10 +109,11 @@ static void initialize_sim_state(SimState* state, Process* processes, int count,
     state->temp_gantt_event_count = 0;
     state->total_cpu_busy_time = 0;
 
-    // Initializing all processes (NEW state + Burst time)
+    // Initializing all processes
     for (int i = 0; i < count; i++) {
         processes[i].state = NEW;
         processes[i].remaining_burst_time = processes[i].burst_time;
+        processes[i].current_quantum_runtime = 0; 
     }
 
     qsort(state->all_processes, count, sizeof(Process), compare_processes_by_arrival);
@@ -133,7 +134,7 @@ static void add_gantt_event_to_state(SimState* state, int time, const char* proc
 
 
 static void simulate_tick(SimState* state) {
-    // Handling Process Arrivals for the current time
+    // 1. Handle Process Arrivals
     for (int i = 0; i < state->total_process_count; i++) {
         if (state->all_processes[i].state == NEW && state->all_processes[i].arrival_time == state->current_time) {
             state->all_processes[i].state = READY;
@@ -142,11 +143,20 @@ static void simulate_tick(SimState* state) {
         }
     }
 
-    // Checking if a reschedule is needed (CPU is free OR Preemption)
+    // 2. Handle Quantum Expiry Preemption
+    if (state->running_process != NULL) {
+        int quantum = policy_get_quantum(state->active_policy_handle, state->running_process);
+        if (quantum > 0 && state->running_process->current_quantum_runtime >= quantum) {
+            printf("Time %d: Process %s quantum expired. Demoting.\n", state->current_time, state->running_process->name);
+            policy_demote_process(state->active_policy_handle, state->running_process);
+            state->running_process = NULL; // CPU becomes free
+        }
+    }
+
+    // 3. Handle Priority-Based Preemption or Select New Process
     bool should_reschedule = policy_needs_reschedule(state->active_policy_handle, state->running_process);
     if (should_reschedule) {
         Process* previously_running = state->running_process;
-        // Case : A process was running and must be preempted 
         if (previously_running != NULL) {
             previously_running->state = READY;
             policy_add_process(state->active_policy_handle, previously_running);
@@ -155,38 +165,34 @@ static void simulate_tick(SimState* state) {
         Process* next_process = policy_get_next_process(state->active_policy_handle);
         state->running_process = next_process;
 
-        if ((state->running_process != previously_running) && (state->running_process != NULL)) {
+        if (state->running_process != previously_running && state->running_process != NULL) {
             state->running_process->state = RUNNING;
+            state->running_process->current_quantum_runtime = 0;
             printf("Time %d: Process %s starts running.\n", state->current_time, state->running_process->name);
-        } 
-        
+        }
     }
 
-    // Handling the running process (CPU Activity for this tick)
+    // 4. Execute Tick for the Running Process
     if (state->running_process != NULL) {
         add_gantt_event_to_state(state, state->current_time, state->running_process->name);
-        state->total_cpu_busy_time++; 
-
-        // Decrementing the remaining burst time of the running process
+        state->total_cpu_busy_time++;
+        
         state->running_process->remaining_burst_time--;
-
-        // Notifying the policy of tick 
+        state->running_process->current_quantum_runtime++;
+        
         policy_tick(state->active_policy_handle);
 
-        // Checking if the process finished at the end of this tick
         if (state->running_process->remaining_burst_time == 0) {
             state->running_process->state = TERMINATED;
-            state->running_process->finish_time = state->current_time + 1; 
+            state->running_process->finish_time = state->current_time + 1;
             state->running_process->turnaround_time = state->running_process->finish_time - state->running_process->arrival_time;
             state->running_process->waiting_time = state->running_process->turnaround_time - state->running_process->burst_time;
             state->terminated_count++;
             
             printf("Time %d: Process %s finished.\n", state->current_time + 1, state->running_process->name);
-            // Freeing the CPU
-            state->running_process = NULL; 
+            state->running_process = NULL;
         }
     } else {
-        // Case : CPU is idle for this tick
         add_gantt_event_to_state(state, state->current_time, "IDLE");
     }
 }

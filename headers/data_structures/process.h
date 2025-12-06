@@ -36,6 +36,7 @@ typedef struct Process {
     // Process Preemption Tracking
     bool is_preempted;
     int last_executed_time;
+    int current_quantum_runtime; // Time running in the current time slice
 } Process;
 
 #endif

@@ -82,3 +82,23 @@ bool lifo_policy_needs_reschedule(Policy* policy, Process* running_process) {
     // Rescheduling only when the process is idle
     return running_process == NULL;
 }
+
+/**
+ * @brief Gets the time quantum for a specific process.
+ * @return 0, as LIFO is not a quantum-based policy.
+ */
+int lifo_policy_get_quantum(Policy* policy, Process* process) {
+    (void)policy;
+    (void)process;
+    return 0; // Not applicable
+}
+
+/**
+ * @brief Handles process demotion (quantum expiry).
+ *        Does nothing, as LIFO is not a preemptive quantum-based policy.
+ */
+void lifo_policy_demote_process(Policy* policy, Process* process) {
+    // No-op for LIFO
+    (void)policy;
+    (void)process;
+}
