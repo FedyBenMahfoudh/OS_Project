@@ -51,16 +51,16 @@ Policy* policy_create(const char* policy_name, int quantum) {
         new_internal_policy->type = POLICY_TYPE_PRIORITY;
         new_internal_policy->concrete_policy_data = priority_policy_create(quantum); // Call PRIORITY's specific create
     } 
-    else if (strcmp(policy_name, "rr") == 0) { // Commented out until implemented
+    else if (strcmp(policy_name, "rr") == 0) { 
         new_internal_policy->type = POLICY_TYPE_RR;
         new_internal_policy->concrete_policy_data = rr_policy_create(quantum);
     } 
-    /*
-    else if (strcmp(policy_name, "srt") == 0) { // Commented out until implemented
+    
+    else if (strcmp(policy_name, "srt") == 0) { 
         new_internal_policy->type = POLICY_TYPE_SRT;
         new_internal_policy->concrete_policy_data = srt_policy_create(quantum);
     }
-    */
+    
     else {
         fprintf(stderr, "Policy Interface Error: Policy '%s' not recognized.\n", policy_name);
         free(new_internal_policy); // Policy name not recognized, free wrapper
@@ -103,11 +103,11 @@ void policy_destroy(Policy* policy) {
         case POLICY_TYPE_RR:
             rr_policy_destroy(internal_policy->concrete_policy_data);
             break;
-        /*
-        case POLICY_TYPE_SRT: // Commented out until implemented
+
+        case POLICY_TYPE_SRT:
             srt_policy_destroy(internal_policy->concrete_policy_data);
             break;
-        */
+
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_destroy.\n", internal_policy->type);
             break;
@@ -142,11 +142,11 @@ void policy_add_process(Policy* policy, Process* process) {
         case POLICY_TYPE_RR:
             rr_policy_add_process(internal_policy->concrete_policy_data, process);
             break;
-        /*
-        case POLICY_TYPE_SRT: // Commented out until implemented
+        
+        case POLICY_TYPE_SRT: 
             srt_policy_add_process(internal_policy->concrete_policy_data, process);
             break;
-        */
+
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_add_process.\n", internal_policy->type);
             break;
@@ -175,10 +175,10 @@ Process* policy_get_next_process(Policy* policy) {
             return priority_policy_get_next_process(internal_policy->concrete_policy_data);
         case POLICY_TYPE_RR:
             return rr_policy_get_next_process(internal_policy->concrete_policy_data);
-        /*
-        case POLICY_TYPE_SRT: // Commented out until implemented
+        
+        case POLICY_TYPE_SRT: 
             return srt_policy_get_next_process(internal_policy->concrete_policy_data);
-        */
+        
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_get_next_process.\n", internal_policy->type);
             return NULL;
@@ -211,11 +211,11 @@ void policy_tick(Policy* policy) {
         case POLICY_TYPE_RR:
             rr_policy_tick(internal_policy->concrete_policy_data);
             break;
-        /*
-        case POLICY_TYPE_SRT: // Commented out until implemented
+        
+        case POLICY_TYPE_SRT: 
             // if (srt_policy_tick) srt_policy_tick(internal_policy->concrete_policy_data);
             break;
-        */
+        
         default:
             // This is not an error; many policies don't need a tick function.
             break;
@@ -245,10 +245,10 @@ bool policy_needs_reschedule(Policy* policy, Process* running_process) {
             return priority_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         case POLICY_TYPE_RR:
             return rr_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        /*
-        case POLICY_TYPE_SRT: // Commented out until implemented
+        
+        case POLICY_TYPE_SRT:
             return srt_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        */
+        
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_needs_reschedule.\n", internal_policy->type);
             return true;
@@ -270,7 +270,8 @@ int policy_get_quantum(Policy* policy, Process* process) {
             return priority_policy_get_quantum(internal_policy->concrete_policy_data, process);
         case POLICY_TYPE_RR:
             return rr_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        // Add cases for SRT, MLFQ here later
+        case POLICY_TYPE_SRT:
+            return srt_policy_get_quantum(internal_policy->concrete_policy_data, process);
         default:
             return 0; // Default to no quantum
     }
@@ -296,7 +297,9 @@ void policy_demote_process(Policy* policy, Process* process) {
         case POLICY_TYPE_RR:
             rr_policy_demote_process(internal_policy->concrete_policy_data, process);
             break;
-        // Add cases for SRT, MLFQ here later
+        case POLICY_TYPE_SRT:
+            srt_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
         default:
             // Default to no-op
             break;
