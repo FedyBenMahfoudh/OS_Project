@@ -4,6 +4,8 @@ plan/
 # Build artifacts from Makefile
 /build/
 /scheduler
+/tui_scheduler
+/gui_scheduler
 
 # Test results or other generated output
 /results/
