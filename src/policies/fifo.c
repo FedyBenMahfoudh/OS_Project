@@ -42,7 +42,7 @@ void fifo_policy_destroy(Policy* policy) {
  * @param policy The policy.
  * @param process The process to add.
  */
-void fifo_add_process(Policy* policy, Process* process) {
+void fifo_policy_add_process(Policy* policy, Process* process) {
     if ((!policy) || (!process)) return;
 
     queue_enqueue(policy->queue, process);
@@ -53,8 +53,37 @@ void fifo_add_process(Policy* policy, Process* process) {
  * @param policy The policy.
  * @return The next process to run, or NULL if none.
  */
-Process* fifo_get_next_process(Policy* policy) {
+Process* fifo_policy_get_next_process(Policy* policy) {
     if ((!policy) || (queue_is_empty(policy->queue))) return NULL;
 
     return queue_dequeue(policy->queue);
+}
+
+
+void fifo_policy_tick(Policy* policy) {}
+
+
+bool fifo_policy_needs_reschedule(Policy* policy, Process* running_process) {
+    // Rescheduling only when the process is idle
+    return running_process == NULL;
+}
+
+/**
+ * @brief Gets the time quantum for a specific process.
+ * @return 0, as FIFO is not a quantum-based policy.
+ */
+int fifo_policy_get_quantum(Policy* policy, Process* process) {
+    (void)policy;
+    (void)process;
+    return 0; // Not applicable
+}
+
+/**
+ * @brief Handles process demotion (quantum expiry).
+ *        Does nothing, as FIFO is not a preemptive quantum-based policy.
+ */
+void fifo_policy_demote_process(Policy* policy, Process* process) {
+    // No-op for FIFO
+    (void)policy;
+    (void)process;
 }

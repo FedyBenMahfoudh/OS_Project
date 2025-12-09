@@ -19,8 +19,7 @@
  *          including the min-heap used to efficiently select processes
  *          with the shortest burst time.
  */
-struct Policy
-{
+struct Policy {
     /** @brief Min-heap data structure storing ready processes sorted by burst time */
     MinHeap *Heap;
 };
@@ -46,8 +45,7 @@ int sjf_comparator(Process* a, Process* b) {
  * @note Errors in heap creation are properly handled with cleanup
  * @see sjf_policy_destroy
  */
-Policy *sjf_policy_create(int quantum)
-{
+Policy *sjf_policy_create(int quantum) {
     Policy *sjf_policy = (Policy *)malloc(sizeof(Policy));
 
     if (!sjf_policy)
@@ -75,8 +73,7 @@ Policy *sjf_policy_create(int quantum)
  * @warning Calling this function with a policy twice will cause undefined behavior
  * @see sjf_policy_create
  */
-void sjf_policy_destroy(Policy *policy)
-{
+void sjf_policy_destroy(Policy *policy) {
     if (!policy)
         return;
 
@@ -96,8 +93,7 @@ void sjf_policy_destroy(Policy *policy)
  * @warning Does nothing if either policy or process is NULL
  * @see sjf_get_next_process
  */
-void sjf_add_process(Policy *policy, Process *process)
-{
+void sjf_policy_add_process(Policy *policy, Process *process) {
     if (!policy || !process)
         return;
     // Ajouter le processus à la Heap interne
@@ -115,7 +111,7 @@ void sjf_add_process(Policy *policy, Process *process)
  * @note The caller becomes responsible for the returned Process pointer
  * @see sjf_add_process
  */
-Process *sjf_get_next_process(Policy *policy)
+Process* sjf_policy_get_next_process(Policy *policy)
 {
     if (!policy || min_heap_is_empty(policy->Heap))
     {
@@ -123,4 +119,45 @@ Process *sjf_get_next_process(Policy *policy)
     }
     // Récupérer le prochain processus de la Heap interne
     return min_heap_pop(policy->Heap);
+}
+
+/**
+ * @brief Notifies the policy that a clock tick has occurred.
+ * @param policy The policy handle (unused for SJF).
+ */
+void sjf_policy_tick(Policy* policy) {
+    // SJF is non-preemptive and doesn't use aging, so tick is a no-op.
+    (void)policy;
+}
+
+/**
+ * @brief Determines if the scheduler should re-evaluate who is running.
+ * @param policy The policy handle (unused for SJF).
+ * @param running_process The process currently on the CPU.
+ * @return true only if the CPU is idle.
+ */
+bool sjf_policy_needs_reschedule(Policy* policy, Process* running_process) {
+    (void)policy;
+    // For non-preemptive SJF, a reschedule is only needed if the CPU is free.
+    return running_process == NULL;
+}
+
+/**
+ * @brief Gets the time quantum for a specific process.
+ * @return 0, as SJF is not a quantum-based policy.
+ */
+int sjf_policy_get_quantum(Policy* policy, Process* process) {
+    (void)policy;
+    (void)process;
+    return 0; // Not applicable
+}
+
+/**
+ * @brief Handles process demotion (quantum expiry).
+ *        Does nothing, as SJF is not a preemptive quantum-based policy.
+ */
+void sjf_policy_demote_process(Policy* policy, Process* process) {
+    // No-op for SJF
+    (void)policy;
+    (void)process;
 }

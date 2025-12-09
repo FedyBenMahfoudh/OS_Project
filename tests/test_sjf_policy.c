@@ -36,7 +36,7 @@ int main() {
     printf("Adding %d processes to SJF policy from '%s':\n", process_count, config_filepath);
     for (int i = 0; i < process_count; i++) {
         printf("  Adding process: %s (Burst: %d)\n", processes[i].name, processes[i].burst_time);
-        sjf_add_process(policy, &processes[i]);
+        sjf_policy_add_process(policy, &processes[i]);
     }
 
     // 4. Retrieve processes and check order
@@ -55,7 +55,7 @@ int main() {
         pass = 0;
     } else {
         for (int i = 0; i < expected_count; i++) {
-            next = sjf_get_next_process(policy);
+            next = sjf_policy_get_next_process(policy);
             printf("Expected: %s, Got: %s\n", expected_order[i], next ? next->name : "(null)");
             if (!next || strcmp(next->name, expected_order[i]) != 0) {
                 pass = 0;
@@ -66,7 +66,7 @@ int main() {
     }
     
     // 5. Check if heap is empty
-    next = sjf_get_next_process(policy);
+    next = sjf_policy_get_next_process(policy);
     if (next != NULL) {
         pass = 0;
         fprintf(stderr, "TEST FAILED: Expected heap to be empty but got a process (%s).\n", next->name);
