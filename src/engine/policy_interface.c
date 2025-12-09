@@ -51,11 +51,12 @@ Policy* policy_create(const char* policy_name, int quantum) {
         new_internal_policy->type = POLICY_TYPE_PRIORITY;
         new_internal_policy->concrete_policy_data = priority_policy_create(quantum); // Call PRIORITY's specific create
     } 
-    /*
     else if (strcmp(policy_name, "rr") == 0) { // Commented out until implemented
         new_internal_policy->type = POLICY_TYPE_RR;
         new_internal_policy->concrete_policy_data = rr_policy_create(quantum);
-    } else if (strcmp(policy_name, "srt") == 0) { // Commented out until implemented
+    } 
+    /*
+    else if (strcmp(policy_name, "srt") == 0) { // Commented out until implemented
         new_internal_policy->type = POLICY_TYPE_SRT;
         new_internal_policy->concrete_policy_data = srt_policy_create(quantum);
     }
@@ -99,10 +100,10 @@ void policy_destroy(Policy* policy) {
         case POLICY_TYPE_PRIORITY:
             priority_policy_destroy(internal_policy->concrete_policy_data);
             break;
-        /*
-        case POLICY_TYPE_RR: // Commented out until implemented
+        case POLICY_TYPE_RR:
             rr_policy_destroy(internal_policy->concrete_policy_data);
             break;
+        /*
         case POLICY_TYPE_SRT: // Commented out until implemented
             srt_policy_destroy(internal_policy->concrete_policy_data);
             break;
@@ -138,12 +139,12 @@ void policy_add_process(Policy* policy, Process* process) {
         case POLICY_TYPE_PRIORITY:
             priority_policy_add_process(internal_policy->concrete_policy_data, process);
             break;
-        /*
-        case POLICY_TYPE_RR: // Commented out until implemented
-            rr_add_process(internal_policy->concrete_policy_data, process);
+        case POLICY_TYPE_RR:
+            rr_policy_add_process(internal_policy->concrete_policy_data, process);
             break;
+        /*
         case POLICY_TYPE_SRT: // Commented out until implemented
-            srt_add_process(internal_policy->concrete_policy_data, process);
+            srt_policy_add_process(internal_policy->concrete_policy_data, process);
             break;
         */
         default:
@@ -172,11 +173,11 @@ Process* policy_get_next_process(Policy* policy) {
             return sjf_policy_get_next_process(internal_policy->concrete_policy_data);
         case POLICY_TYPE_PRIORITY:
             return priority_policy_get_next_process(internal_policy->concrete_policy_data);
+        case POLICY_TYPE_RR:
+            return rr_policy_get_next_process(internal_policy->concrete_policy_data);
         /*
-        case POLICY_TYPE_RR: // Commented out until implemented
-            return rr_get_next_process(internal_policy->concrete_policy_data);
         case POLICY_TYPE_SRT: // Commented out until implemented
-            return srt_get_next_process(internal_policy->concrete_policy_data);
+            return srt_policy_get_next_process(internal_policy->concrete_policy_data);
         */
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_get_next_process.\n", internal_policy->type);
@@ -207,10 +208,10 @@ void policy_tick(Policy* policy) {
         case POLICY_TYPE_PRIORITY:
             priority_policy_tick(internal_policy->concrete_policy_data);
             break;
-        /*
-        case POLICY_TYPE_RR: // Commented out until implemented
-            // if (rr_policy_tick) rr_policy_tick(internal_policy->concrete_policy_data);
+        case POLICY_TYPE_RR:
+            rr_policy_tick(internal_policy->concrete_policy_data);
             break;
+        /*
         case POLICY_TYPE_SRT: // Commented out until implemented
             // if (srt_policy_tick) srt_policy_tick(internal_policy->concrete_policy_data);
             break;
@@ -242,9 +243,11 @@ bool policy_needs_reschedule(Policy* policy, Process* running_process) {
             return sjf_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         case POLICY_TYPE_PRIORITY:
             return priority_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
+        case POLICY_TYPE_RR:
+            return rr_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         /*
         case POLICY_TYPE_SRT: // Commented out until implemented
-            return srt_needs_reschedule(internal_policy->concrete_policy_data, running_process);
+            return srt_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
         */
         default:
             fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_needs_reschedule.\n", internal_policy->type);
@@ -265,7 +268,9 @@ int policy_get_quantum(Policy* policy, Process* process) {
             return sjf_policy_get_quantum(internal_policy->concrete_policy_data, process);
         case POLICY_TYPE_PRIORITY:
             return priority_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        // Add cases for RR, SRT, MLFQ here later
+        case POLICY_TYPE_RR:
+            return rr_policy_get_quantum(internal_policy->concrete_policy_data, process);
+        // Add cases for SRT, MLFQ here later
         default:
             return 0; // Default to no quantum
     }
@@ -288,7 +293,10 @@ void policy_demote_process(Policy* policy, Process* process) {
         case POLICY_TYPE_PRIORITY:
             priority_policy_demote_process(internal_policy->concrete_policy_data, process);
             break;
-        // Add cases for RR, SRT, MLFQ here later
+        case POLICY_TYPE_RR:
+            rr_policy_demote_process(internal_policy->concrete_policy_data, process);
+            break;
+        // Add cases for SRT, MLFQ here later
         default:
             // Default to no-op
             break;
