@@ -30,17 +30,41 @@ TEST_TARGETS = $(TEST_SRCS:tests/%.c=build/%)
 all: $(TARGET)
 	@echo "✅  Build complete: ./${TARGET}"
 
+# Build TUI version
+tui: tui_scheduler
+	@echo "✅  TUI build complete: ./tui_scheduler"
+
+# Build GUI version  
+gui: gui_scheduler
+	@echo "✅  GUI build complete: ./gui_scheduler"
+
 # Rule to link the final application executable
 # It depends on all object files except the test runner's object file
-$(TARGET): $(filter-out build/tests/test_runner.o, $(OBJS))
+$(TARGET): $(filter-out build/tests/test_runner.o build/src/main/tui_scheduler.o build/src/main/gui_scheduler.o, $(OBJS))
 	@echo "🔗  LD | Linking main application: $@"
 	@$(CC) $^ -o $@
+
+# Rule to link the TUI scheduler with ncurses
+tui_scheduler: $(filter-out build/src/main/main.o build/src/main/gui_scheduler.o build/tests/test_runner.o, $(OBJS))
+	@echo "🔗  LD | Linking TUI application: $@"
+	@$(CC) $^ -o $@ -lncurses
+
+# Rule to link the GUI scheduler with GTK
+gui_scheduler: $(filter-out build/src/main/main.o build/src/main/tui_scheduler.o build/tests/test_runner.o, $(OBJS))
+	@echo "🔗  LD | Linking GUI application: $@"
+	@$(CC) $^ -o $@ `pkg-config --cflags --libs gtk+-3.0`
 
 # Pattern rule to compile any .c file into a .o file in the build directory
 build/%.o: %.c
 	@echo "🎨  CC | Compiling $<"
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Special rule for GUI scheduler - needs GTK flags
+build/src/main/gui_scheduler.o: src/main/gui_scheduler.c
+	@echo "🎨  CC | Compiling $< (with GTK)"
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) `pkg-config --cflags gtk+-3.0` -c $< -o $@
 
 # ==============================================================================
 # =                               Test Targets                               =
@@ -74,7 +98,7 @@ run: all
 # 'make clean' removes the executable and the build directory
 clean:
 	@echo "🗑️  CLEAN | Removing build artifacts..."
-	@rm -f $(TARGET)
+	@rm -f $(TARGET) tui_scheduler gui_scheduler
 	@rm -rf build
 	@echo "✨  Project is clean."
 
@@ -82,4 +106,4 @@ clean:
 rebuild: clean all
 
 # Declare targets that are not files
-.PHONY: all run clean rebuild test
+.PHONY: all run clean rebuild test tui gui
