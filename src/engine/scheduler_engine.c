@@ -18,11 +18,12 @@ typedef struct {
     GanttEvent* temp_gantt_chart;
     int temp_gantt_event_count;
     long long total_cpu_busy_time;
+    bool verbose_logging;
 } SimState;
 
 
 // Helper Function Prototypes
-static void initialize_sim_state(SimState* state, Process* processes, int count, Policy* policy_handle);
+static void initialize_sim_state(SimState* state, Process* processes, int count, Policy* policy_handle, bool verbose);
 static void simulate_tick(SimState* state);
 static void calculate_final_metrics(SimState* state, SimulationResult* results);
 static void add_gantt_event_to_state(SimState* state, int time, const char* process_name);
@@ -61,13 +62,27 @@ SimulationResult* run_simulation(const SimParameters* params) {
     // Initializing the simulation state
     SimState state;
     memset(&state, 0, sizeof(SimState));
-    initialize_sim_state(&state, parsed_processes, parsed_process_count, policy_handle);
+    initialize_sim_state(&state, parsed_processes, parsed_process_count, policy_handle, params->verbose);
 
-    printf("Scheduler Engine: Starting simulation for policy '%s' with %d processes :\n", params->policy_name, state.total_process_count);
+    if (params->verbose) {
+        printf("Scheduler Engine: Starting simulation for policy '%s' with %d processes :\n", params->policy_name, state.total_process_count);
+    }
 
     while (state.terminated_count < state.total_process_count) {
         simulate_tick(&state);
         state.current_time++;
+        
+        // Calling the live update callback if provided (For the TUI and GUI versions)
+        if (params->tick_callback) {
+            params->tick_callback(
+                state.current_time,
+                state.all_processes,
+                state.total_process_count,
+                state.running_process,
+                state.temp_gantt_chart,
+                state.temp_gantt_event_count
+            );
+        }
     }
     
     calculate_final_metrics(&state, final_results);
@@ -77,7 +92,9 @@ SimulationResult* run_simulation(const SimParameters* params) {
 
     policy_destroy(policy_handle);
     
-    printf("Scheduler Engine: Simulation finished at time %d.\n", state.current_time);
+    if (params->verbose) {
+        printf("Scheduler Engine: Simulation finished at time %d.\n", state.current_time);
+    }
 
     return final_results;
 }
@@ -98,10 +115,11 @@ static int compare_processes_by_arrival(const void* a, const void* b) {
     return 0;
 }
 
-static void initialize_sim_state(SimState* state, Process* processes, int count, Policy* policy_handle) {
+static void initialize_sim_state(SimState* state, Process* processes, int count, Policy* policy_handle, bool verbose) {
     state->current_time = 0;
     state->all_processes = processes;
     state->total_process_count = count;
+    state->verbose_logging = verbose;
     state->running_process = NULL;
     state->active_policy_handle = policy_handle;
     state->terminated_count = 0;
@@ -136,10 +154,12 @@ static void add_gantt_event_to_state(SimState* state, int time, const char* proc
 static void simulate_tick(SimState* state) {
     // 1. Handle Process Arrivals
     for (int i = 0; i < state->total_process_count; i++) {
-        if (state->all_processes[i].state == NEW && state->all_processes[i].arrival_time == state->current_time) {
+    if (state->all_processes[i].state == NEW && state->all_processes[i].arrival_time == state->current_time) {
             state->all_processes[i].state = READY;
             policy_add_process(state->active_policy_handle, &state->all_processes[i]);
-            printf("Time %d: Process %s arrived.\n", state->current_time, state->all_processes[i].name);
+            if (state->verbose_logging) {
+                printf("Time %d: Process %s arrived.\n", state->current_time, state->all_processes[i].name);
+            }
         }
     }
 
@@ -147,9 +167,12 @@ static void simulate_tick(SimState* state) {
     if (state->running_process != NULL) {
         int quantum = policy_get_quantum(state->active_policy_handle, state->running_process);
         if (quantum > 0 && state->running_process->current_quantum_runtime >= quantum) {
-            printf("Time %d: Process %s quantum expired. Demoting.\n", state->current_time, state->running_process->name);
+            if (state->verbose_logging) {
+                printf("Time %d: Process %s quantum expired. Demoting.\n", state->current_time, state->running_process->name);
+            }
             policy_demote_process(state->active_policy_handle, state->running_process);
-            state->running_process = NULL; // CPU becomes free
+            // CPU becomes free
+            state->running_process = NULL; 
         }
     }
 
@@ -168,7 +191,19 @@ static void simulate_tick(SimState* state) {
         if (state->running_process != previously_running && state->running_process != NULL) {
             state->running_process->state = RUNNING;
             state->running_process->current_quantum_runtime = 0;
-            printf("Time %d: Process %s starts running.\n", state->current_time, state->running_process->name);
+            
+            // Setting the start_time when process first starts executing
+            if (state->running_process->start_time == 0 && state->current_time > 0) {
+                state->running_process->start_time = state->current_time;
+            }
+            // Setting the response_time when process first gets CPU (first time running)
+            if (state->running_process->response_time == 0) {
+                state->running_process->response_time = state->current_time - state->running_process->arrival_time;
+            }
+            
+            if (state->verbose_logging) {
+                printf("Time %d: Process %s starts running.\n", state->current_time, state->running_process->name);
+            }
         }
     }
 
@@ -189,7 +224,9 @@ static void simulate_tick(SimState* state) {
             state->running_process->waiting_time = state->running_process->turnaround_time - state->running_process->burst_time;
             state->terminated_count++;
             
-            printf("Time %d: Process %s finished.\n", state->current_time + 1, state->running_process->name);
+            if (state->verbose_logging) {
+                printf("Time %d: Process %s finished.\n", state->current_time + 1, state->running_process->name);
+            }
             state->running_process = NULL;
         }
     } else {
