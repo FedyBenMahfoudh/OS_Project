@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <getopt.h>
 
 
 const char* headers_dir_path = "headers/policies";
@@ -194,4 +195,107 @@ bool get_policy_input(char** policy_input) {
 cleanup:
     free_array(available_policies, policy_count);
     return success;
+}
+
+
+/**
+ * @brief Displays usage information for the program.
+ * @param prog_name The name of the program (argv[0]).
+ */
+void print_usage(const char* prog_name) {
+    printf("\n");
+    printf("╔═══════════════════════════════════════════════════════════════╗\n");
+    printf("║       Linux Multi-Tasks Scheduler - Usage Information         ║\n");
+    printf("╚═══════════════════════════════════════════════════════════════╝\n");
+    printf("\n");
+    printf("Usage: %s -c <config_file> [OPTIONS]\n", prog_name);
+    printf("\n");
+    printf("Required Arguments:\n");
+    printf("  -c, --config FILE    Path to the process configuration file\n");
+    printf("\n");
+    printf("Optional Arguments:\n");
+    printf("  --verbose            Enable verbose output with detailed logs\n");
+    printf("  -h, --help           Display this help message and exit\n");
+    printf("\n");
+    printf("Examples:\n");
+    printf("  %s -c configs/test1.conf\n", prog_name);
+    printf("  %s --config configs/test1.conf --verbose\n", prog_name);
+    printf("\n");
+    printf("After starting, you will be prompted to select a scheduling policy\n");
+    printf("from the available options discovered in your installation.\n");
+    printf("\n");
+}
+
+
+/**
+ * @brief Parses command-line arguments using getopt_long.
+ *
+ * @param argc Argument count from main.
+ * @param argv Argument vector from main.
+ * @param params Pointer to CLIParams structure to populate.
+ * @return 0 on success, -1 on error or if help was displayed.
+ */
+int parse_arguments(int argc, char* argv[], CLIParams* params) {
+    // Initialize parameters with default values
+    params->config_filepath = NULL;
+    params->verbose = false;
+
+    // Defining long options for getopt_long
+    const struct option long_options[] = {
+        {"config",  required_argument, 0, 'c'},
+        {"verbose", no_argument,       0, 'v'},
+        {"help",    no_argument,       0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    int opt;
+    int option_index = 0;
+
+    // Parsing command-line options
+    while ((opt = getopt_long(argc, argv, "c:vh", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'c':
+                params->config_filepath = optarg;
+                break;
+            
+            case 'v':
+                params->verbose = true;
+                break;
+            
+            case 'h':
+                print_usage(argv[0]);
+                return -1;  // Signal to exit (not an error, just showing help)
+            
+            case '?':
+                // getopt_long already printed an error message
+                fprintf(stderr, "\n");
+                print_usage(argv[0]);
+                return -1;
+            
+            default:
+                print_usage(argv[0]);
+                return -1;
+        }
+    }
+
+    // Validating the required argument (config filepath)
+    if (!params->config_filepath) {
+        fprintf(stderr, "Error: Configuration file is required.\n");
+        print_usage(argv[0]);
+        return -1;
+    }
+
+    // Checking that the config file exists
+    if (access(params->config_filepath, F_OK) != 0) {
+        fprintf(stderr, "Error: Configuration file '%s' does not exist.\n", params->config_filepath);
+        return -1;
+    }
+
+    // Checking that the config file is readable
+    if (access(params->config_filepath, R_OK) != 0) {
+        fprintf(stderr, "Error: Configuration file '%s' is not readable.\n", params->config_filepath);
+        return -1;
+    }
+
+    return 0;  // Success
 }

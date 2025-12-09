@@ -91,7 +91,8 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                 // Matching the first line pattern to extract the process name
                 char process_name[32];
                 if (sscanf(trimmed_line, "process %31s {", process_name) == 1) {
-                    printf("Found new process: %s\n", process_name);
+                    // Used to use it to show the process name but an another function now handles this output
+                    // printf("Found new process: %s\n", process_name);
                 }
 
                 // Checking if the array is running out of places for new processes
