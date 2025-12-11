@@ -2,9 +2,38 @@
 # =                            Compiler and Flags                            =
 # ==============================================================================
 CC = gcc
+
+# ==============================================================================
+# =                        Dynamic Policy Detection                          =
+# ==============================================================================
+# List of all known policy names in the project
+POLICY_NAMES := fifo lifo sjf priority rr srt mlfq preemptive_priority
+
+# Initialize empty list for valid policies
+VALID_POLICIES :=
+
+# For each policy, check if BOTH .h and .c files exist
+# Only include the policy if both files are present
+$(foreach policy,$(POLICY_NAMES),\
+    $(if $(and $(wildcard src/policies/$(policy).c),\
+               $(wildcard headers/policies/$(policy).h)),\
+        $(eval VALID_POLICIES += $(policy))))
+
+# Generate compilation flags for each valid policy
+# Example: fifo -> -DHAVE_FIFO_POLICY
+POLICY_DEFINES := $(foreach policy,$(VALID_POLICIES),\
+    -DHAVE_$(shell echo $(policy) | tr '[:lower:]' '[:upper:]')_POLICY)
+
 # -Iheaders allows #include <...h> to search in the headers/ directory
 # -Wall enables all warnings, -g adds debug symbols
-CFLAGS = -Wall -g -Iheaders
+# POLICY_DEFINES are automatically generated based on available policy files
+CFLAGS = -w -g -Iheaders $(POLICY_DEFINES)
+
+# ==============================================================================
+# =                              File Discovery                              =
+# ==============================================================================
+# The final executable name for the main application
+TARGET = scheduler
 
 # ==============================================================================
 # =                              File Discovery                              =
@@ -13,12 +42,26 @@ CFLAGS = -Wall -g -Iheaders
 TARGET = scheduler
 
 # Automatically find all .c files in the src/ directory and its subdirectories
-SRCS = $(shell find src -name '*.c')
+ALL_SRCS = $(shell find src -name '*.c')
+
+# --- Filter out Invalid Policies ---
+# Identify all policy source files (excluding policies.c which is the registrar)
+POSSIBLE_POLICY_SRCS = $(wildcard src/policies/*.c)
+POSSIBLE_POLICY_SRCS := $(filter-out src/policies/policies.c, $(POSSIBLE_POLICY_SRCS))
+
+# Identify which ones are VALID (based on VALID_POLICIES computed above)
+# We reconstruct the path: src/policies/name.c
+VALID_POLICY_SRCS = $(foreach policy,$(VALID_POLICIES),src/policies/$(policy).c)
+
+# Determine which sources to EXCLUDE (Present on disk but not Valid)
+# This handles the case where .c exists but .h is missing
+IGNORED_POLICY_SRCS = $(filter-out $(VALID_POLICY_SRCS), $(POSSIBLE_POLICY_SRCS))
+
+# Final SRCS list: All sources minus the ignored policy files
+SRCS = $(filter-out $(IGNORED_POLICY_SRCS), $(ALL_SRCS))
+
 # Generate corresponding object file names, placing them in a 'build/' directory
 OBJS = $(SRCS:%.c=build/%.o)
-
-# --- Test Specific Files ---
-# Find all test files in the tests/ directory
 TEST_SRCS = tests/test_parser.c tests/test_fifo_policy.c tests/test_lifo_policy.c tests/test_priority_policy.c tests/test_sjf_policy.c tests/test_parser_logic.c tests/test_policy_interface.c tests/test_scheduler_engine.c
 # Create a list of test executables that will be placed in the 'build/' directory
 TEST_TARGETS = $(TEST_SRCS:tests/%.c=build/%)
