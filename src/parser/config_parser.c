@@ -120,6 +120,7 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                 current_process->arrival_time = -1; // REQUIRED field
                 current_process->burst_time = -1; // REQUIRED field
                 current_process->priority = 0; // OPTIONAL field
+                current_process->original_index = *process_count; // Set original index
 
                 // Initializing the runtime metrics to 0
                 current_process->start_time = 0;
@@ -132,6 +133,11 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                 current_process->last_executed_time = 0;
                 current_process->is_preempted = false;
                 current_process->current_quantum_runtime = 0; // Initialize the new field
+                
+                // MLFQ Initialization
+                current_process->last_active_time = 0;
+                current_process->current_queue_level = 0;
+                current_process->time_spent_at_current_level = 0;
 
                 // Changing the state of the process
                 state = IN_PROCESS;

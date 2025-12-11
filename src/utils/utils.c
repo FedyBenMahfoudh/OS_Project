@@ -8,16 +8,16 @@ void print_process_table(const Process* processes, int count) {
     }
 
     printf("\nSuccessfully parsed %d processes:\n", count);
-    printf("-------------------------------------------\n");
-    printf("| %-10s | Arrival | Burst | Priority |\n", "Name");
-    printf("-------------------------------------------\n");
+    printf("-----------------------------------------------------\n");
+    printf("| %-20s | Arrival | Burst | Priority |\n", "Name");
+    printf("-----------------------------------------------------\n");
 
     for (int i = 0; i < count; i++) {
-        printf("| %-10s | %7d | %5d | %8d |\n",
+        printf("| %-20s | %7d | %5d | %8d |\n",
                processes[i].name,
                processes[i].arrival_time,
                processes[i].burst_time,
                processes[i].priority);
     }
-    printf("-------------------------------------------\n");
+    printf("-----------------------------------------------------\n");
 }
