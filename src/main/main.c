@@ -16,7 +16,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // printf("\n");
     printf("╔═══════════════════════════════════════════════════╗\n");
     printf("║       Linux Multi-Tasks Scheduler Simulator       ║\n");
     printf("╚═══════════════════════════════════════════════════╝\n");
@@ -27,12 +26,8 @@ int main(int argc, char* argv[]) {
     
     if (processes) {
         print_process_table(processes, process_count);
-        
-        // We free the processes here because run_simulation will parse them again
-        // (Optimally we would pass them, but keeping it simple for now as per current architecture)
         free(processes);
     } else {
-        // parsing failed, error message printed by parser
         return EXIT_FAILURE;
     }
 
@@ -43,17 +38,16 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // 3. Handle Round Robin quantum input
+    // 3. Handle Round Robin or Multilevel Feedback quantum input
     int quantum = 0;
-    if (strcmp(selected_policy, "rr") == 0) {
-        printf("\nRound Robin selected.\n");
+    if (strcmp(selected_policy, "rr") == 0 || strcmp(selected_policy, "mlfq") == 0) {
+        printf("\nPolicy '%s' selected.\n", selected_policy);
         printf("Enter time quantum (integer > 0): ");
         if (scanf("%d", &quantum) != 1 || quantum <= 0) {
             fprintf(stderr, "Error: Invalid quantum value. Must be a positive integer.\n");
             free(selected_policy);
             return EXIT_FAILURE;
         }
-        // Consume newline left in buffer
         int c;
         while ((c = getchar()) != '\n' && c != EOF); 
     }
@@ -64,7 +58,7 @@ int main(int argc, char* argv[]) {
     sim_params.policy_name = selected_policy;
     sim_params.quantum = quantum;
     sim_params.verbose = cli_params.verbose;
-    sim_params.tick_callback = NULL;  // No live updates for CLI
+    sim_params.tick_callback = NULL;
     
     printf("\n");
     printf("--> Starting Simulation...\n");
@@ -89,7 +83,7 @@ int main(int argc, char* argv[]) {
     printf("   - Average Turnaround Time : %.2f units\n", results->average_turnaround_time);
     printf("   - CPU Utilization         : %.2f %%\n", results->cpu_utilization);
     
-    // Display Gantt chart (Always, unless empty)
+    // Display Gantt chart
     if (results->gantt_chart) {
         printf("\n📈 Gantt Chart:\n");
         print_gantt_chart(results);
