@@ -1,307 +1,234 @@
+/**
+ * @file policy_interface.c
+ * @brief Implements the Policy Interface for managing and interacting with various scheduling policies.
+ *
+ * This file provides a generic interface allowing the scheduler engine to interact
+ * with different CPU scheduling policies (e.g., FIFO, RR, Priority) through a
+ * virtual table (VTable) mechanism. It handles policy registration, creation,
+ * destruction, and all common operations like adding processes, getting the next
+ * process, and handling time ticks and rescheduling events.
+ */
+
 #include "../../headers/engine/policy_interface.h"
-
-// Include headers for ALL concrete policy implementations
-// These headers should declare the specific functions like fifo_policy_create, etc.
-#include "../../headers/policies/fifo.h"
-#include "../../headers/policies/lifo.h"    
-#include "../../headers/policies/sjf.h"     
-#include "../../headers/policies/priority.h"
-#include "../../headers/policies/rr.h"      
-#include "../../headers/policies/srt.h"     
-
-#include <stdio.h>  
-#include <stdlib.h> 
-#include <string.h> 
-
-// --- Internal Policy Wrapper Structure ---
-// This structure is internal to policy_interface.c and acts as the "true" Policy
-// that gets returned as an opaque `Policy*`.
-typedef struct {
-    PolicyType type;
-    void* concrete_policy_data;
-} _Policy;
-
+#include "../../headers/policies/policies.h" // The new header with VTable info
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
- * @brief Creates and initializes a new instance of a policy based on its name.
- *        This function acts as a dispatcher, calling the specific create function
- *        for the named policy.
- * @param policy_name The name of the policy to create (e.g., "fifo").
- * @param quantum The time quantum for policies like Round Robin. Ignored otherwise.
- * @return A pointer to the policy's internal state (the handle), or NULL on error.
+ * @brief Maximum number of policies that can be registered.
+ */
+#define MAX_POLICIES 10
+
+/**
+ * @brief Static array to hold pointers to all registered PolicyVTables.
+ */
+static const PolicyVTable* policy_registrar[MAX_POLICIES];
+
+/**
+ * @brief Counter for the number of currently registered policies.
+ */
+static int registered_policy_count = 0;
+
+/**
+ * @brief Cache for storing names of registered policies.
+ */
+static const char* policy_names[MAX_POLICIES]; // Cache for policy names
+
+/**
+ * @brief Internal representation of a Policy.
+ * This structure holds the VTable for policy-specific operations
+ * and a pointer to the concrete policy data. It is opaque to external modules.
+ */
+struct Policy {
+    const PolicyVTable* vtable; /**< Pointer to the virtual table for policy operations. */
+    void* concrete_policy_data; /**< Pointer to the actual policy-specific data structure. */
+};
+
+/**
+ * @brief Registers a scheduling policy with the system.
+ *
+ * This function adds a given PolicyVTable to the internal registrar, making
+ * the policy available for use by the scheduler engine.
+ *
+ * @param vtable A pointer to the constant PolicyVTable structure of the policy to register.
+ */
+void register_policy(const PolicyVTable* vtable) {
+    if (registered_policy_count < MAX_POLICIES) {
+        policy_registrar[registered_policy_count] = vtable;
+        policy_names[registered_policy_count] = vtable->name;
+        registered_policy_count++;
+    } else {
+        fprintf(stderr, "Policy Registrar Error: Exceeded maximum number of policies (%d).\n", MAX_POLICIES);
+    }
+}
+
+/**
+ * @brief Retrieves an array of names of all available (registered) policies.
+ *
+ * @param count A pointer to an integer where the number of available policies will be stored.
+ * @return A constant array of strings, where each string is the name of a registered policy.
+ */
+const char** get_available_policies(int* count) {
+    *count = registered_policy_count;
+    return (const char**)policy_names;
+}
+
+/**
+ * @brief Creates a new instance of a specified scheduling policy.
+ *
+ * This function looks up the policy by name and, if found, uses its VTable's
+ * create function to instantiate the policy-specific data and wrap it in a
+ * generic Policy structure.
+ *
+ * @param policy_name The name of the policy to create (e.g., "fifo", "rr").
+ * @param quantum The time quantum to use for quantum-based policies (ignored by others).
+ * @return A pointer to a newly created Policy object, or NULL if creation fails or policy is not found.
  */
 Policy* policy_create(const char* policy_name, int quantum) {
-    _Policy* new_internal_policy = (_Policy*)malloc(sizeof(_Policy));
-    if (!new_internal_policy) {
-        perror("Policy Interface: Failed to allocate internal _Policy struct");
+    const PolicyVTable* vtable = NULL;
+    for (int i = 0; i < registered_policy_count; i++) {
+        if (strcmp(policy_registrar[i]->name, policy_name) == 0) {
+            vtable = policy_registrar[i];
+            break;
+        }
+    }
+
+    if (!vtable) {
+        fprintf(stderr, "Policy Interface Error: Policy '%s' not recognized or not registered.\n", policy_name);
         return NULL;
     }
 
-    // Dispatch based on policy_name
-    if (strcmp(policy_name, "fifo") == 0) {
-        new_internal_policy->type = POLICY_TYPE_FIFO;
-        new_internal_policy->concrete_policy_data = fifo_policy_create(quantum); // Call FIFO's specific create
-    } else if (strcmp(policy_name, "lifo") == 0) {
-        new_internal_policy->type = POLICY_TYPE_LIFO;
-        new_internal_policy->concrete_policy_data = lifo_policy_create(quantum); // Call LIFO's specific create
-    } else if (strcmp(policy_name, "sjf") == 0) {
-        new_internal_policy->type = POLICY_TYPE_SJF;
-        new_internal_policy->concrete_policy_data = sjf_policy_create(quantum); // Call SJF's specific create
-    } else if (strcmp(policy_name, "priority") == 0) {
-        new_internal_policy->type = POLICY_TYPE_PRIORITY;
-        new_internal_policy->concrete_policy_data = priority_policy_create(quantum); // Call PRIORITY's specific create
-    } 
-    else if (strcmp(policy_name, "rr") == 0) { 
-        new_internal_policy->type = POLICY_TYPE_RR;
-        new_internal_policy->concrete_policy_data = rr_policy_create(quantum);
-    } 
-    
-    else if (strcmp(policy_name, "srt") == 0) { 
-        new_internal_policy->type = POLICY_TYPE_SRT;
-        new_internal_policy->concrete_policy_data = srt_policy_create(quantum);
-    }
-    
-    else {
-        fprintf(stderr, "Policy Interface Error: Policy '%s' not recognized.\n", policy_name);
-        free(new_internal_policy); // Policy name not recognized, free wrapper
+    Policy* new_internal_policy = (Policy*)malloc(sizeof(Policy));
+    if (!new_internal_policy) {
+        perror("Policy Interface: Failed to allocate internal Policy struct");
         return NULL;
     }
+
+    new_internal_policy->vtable = vtable;
+    new_internal_policy->concrete_policy_data = vtable->create(quantum);
 
     if (!new_internal_policy->concrete_policy_data) {
         fprintf(stderr, "Policy Interface Error: Failed to create concrete policy data for '%s'.\n", policy_name);
-        free(new_internal_policy); // Free the generic _Policy wrapper if concrete creation failed
+        free(new_internal_policy);
         return NULL;
     }
 
-    return (Policy*)new_internal_policy; // Return as opaque Policy*
+    return new_internal_policy;
 }
 
 /**
- * @brief Frees all resources used by the policy.
- *        This function dispatches to the specific destroy function
- *        for the concrete policy type.
- * @param policy The policy handle to destroy.
+ * @brief Destroys a Policy instance and frees its associated resources.
+ *
+ * This function calls the policy-specific destroy function from its VTable
+ * to clean up the concrete policy data, and then frees the generic Policy
+ * structure itself.
+ *
+ * @param policy A pointer to the Policy object to destroy.
  */
 void policy_destroy(Policy* policy) {
     if (!policy) return;
-
-    _Policy* internal_policy = (_Policy*)policy; // Cast back to internal type
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            fifo_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_LIFO:
-            lifo_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_SJF:
-            sjf_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_PRIORITY:
-            priority_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_RR:
-            rr_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-
-        case POLICY_TYPE_SRT:
-            srt_policy_destroy(internal_policy->concrete_policy_data);
-            break;
-
-        default:
-            fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_destroy.\n", internal_policy->type);
-            break;
-    }
-    free(internal_policy); // Free the wrapper _Policy struct
+    policy->vtable->destroy(policy->concrete_policy_data);
+    free(policy);
 }
 
 /**
- * @brief Adds a process to the policy's data structure.
- *        This function dispatches to the specific add_process function.
- * @param policy The policy handle.
- * @param process The process that has become ready.
+ * @brief Adds a process to the scheduling policy's ready queue.
+ *
+ * This function delegates the process addition to the policy-specific
+ * add_process function.
+ *
+ * @param policy A pointer to the Policy object.
+ * @param process A pointer to the Process to add.
  */
 void policy_add_process(Policy* policy, Process* process) {
     if (!policy || !process) return;
-
-    _Policy* internal_policy = (_Policy*)policy; // Cast back to internal type
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            fifo_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_LIFO:
-            lifo_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_SJF:
-            sjf_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_PRIORITY:
-            priority_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_RR:
-            rr_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-        
-        case POLICY_TYPE_SRT: 
-            srt_policy_add_process(internal_policy->concrete_policy_data, process);
-            break;
-
-        default:
-            fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_add_process.\n", internal_policy->type);
-            break;
-    }
+    policy->vtable->add_process(policy->concrete_policy_data, process);
 }
 
 /**
- * @brief Selects the next process to be executed according to the policy's rules.
- *        This function dispatches to the specific get_next_process function.
- * @param policy The policy handle.
- * @return The process to execute, or NULL if none are ready.
+ * @brief Retrieves the next process to be run by the CPU according to the policy.
+ *
+ * This function delegates the selection of the next process to the policy-specific
+ * get_next_process function. The returned process is typically removed from the
+ * policy's internal ready queue.
+ *
+ * @param policy A pointer to the Policy object.
+ * @return A pointer to the next Process to run, or NULL if no processes are ready.
  */
 Process* policy_get_next_process(Policy* policy) {
     if (!policy) return NULL;
-
-    _Policy* internal_policy = (_Policy*)policy; // Cast back to internal type
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            return fifo_policy_get_next_process(internal_policy->concrete_policy_data);
-        case POLICY_TYPE_LIFO:
-            return lifo_policy_get_next_process(internal_policy->concrete_policy_data);
-        case POLICY_TYPE_SJF:
-            return sjf_policy_get_next_process(internal_policy->concrete_policy_data);
-        case POLICY_TYPE_PRIORITY:
-            return priority_policy_get_next_process(internal_policy->concrete_policy_data);
-        case POLICY_TYPE_RR:
-            return rr_policy_get_next_process(internal_policy->concrete_policy_data);
-        
-        case POLICY_TYPE_SRT: 
-            return srt_policy_get_next_process(internal_policy->concrete_policy_data);
-        
-        default:
-            fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_get_next_process.\n", internal_policy->type);
-            return NULL;
-    }
+    return policy->vtable->get_next_process(policy->concrete_policy_data);
 }
 
 /**
- * @brief Notifies the policy that a clock tick has occurred.
- *        This function dispatches to the specific tick function.
- * @param policy The policy handle.
+ * @brief Notifies the policy that a time tick has occurred.
+ *
+ * This function allows the policy to perform any per-tick operations, such as
+ * aging, updating internal timers, or checking for preemption conditions.
+ * It's an optional callback; policies that don't need it can leave it NULL.
+ *
+ * @param policy A pointer to the Policy object.
  */
 void policy_tick(Policy* policy) {
     if (!policy) return;
-
-    _Policy* internal_policy = (_Policy*)policy; // Cast back to internal type
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            fifo_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_LIFO:
-            lifo_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_SJF:
-            sjf_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_PRIORITY:
-            priority_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        case POLICY_TYPE_RR:
-            rr_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        
-        case POLICY_TYPE_SRT: 
-            // if (srt_policy_tick) srt_policy_tick(internal_policy->concrete_policy_data);
-            break;
-        
-        default:
-            // This is not an error; many policies don't need a tick function.
-            break;
+    // Tick is optional
+    if (policy->vtable->tick) {
+        policy->vtable->tick(policy->concrete_policy_data);
     }
 }
 
 /**
- * @brief Determines if the scheduler should re-evaluate who is running.
- *        This function dispatches to the specific needs_reschedule function.
- * @param policy The policy handle.
- * @param running_process The process currently on the CPU.
- * @return true if a scheduling decision should be made.
+ * @brief Determines if the scheduler needs to reconsider which process should run.
+ *
+ * This function delegates to the policy-specific needs_reschedule function,
+ * which can indicate preemption due to a higher priority process, quantum expiry,
+ * or other policy-specific conditions.
+ *
+ * @param policy A pointer to the Policy object.
+ * @param running_process A pointer to the currently running process, or NULL if CPU is idle.
+ * @return true if a reschedule is needed, false otherwise.
  */
 bool policy_needs_reschedule(Policy* policy, Process* running_process) {
-    if (!policy) return true; // Fail safe: if no policy, assume reschedule.
-    
-    _Policy* internal_policy = (_Policy*)policy;
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            return fifo_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        case POLICY_TYPE_LIFO:
-            return lifo_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        case POLICY_TYPE_SJF:
-            return sjf_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        case POLICY_TYPE_PRIORITY:
-            return priority_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        case POLICY_TYPE_RR:
-            return rr_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        
-        case POLICY_TYPE_SRT:
-            return srt_policy_needs_reschedule(internal_policy->concrete_policy_data, running_process);
-        
-        default:
-            fprintf(stderr, "Policy Interface Error: Unknown policy type (%d) in policy_needs_reschedule.\n", internal_policy->type);
-            return true;
+    if (!policy) return true;
+    if (policy->vtable->needs_reschedule) {
+        return policy->vtable->needs_reschedule(policy->concrete_policy_data, running_process);
     }
+    return true; // Default to true if not implemented, ensuring active scheduling
 }
 
+/**
+ * @brief Retrieves the time quantum assigned to a specific process by the policy.
+ *
+ * This function delegates to the policy-specific get_quantum function. It's
+ * primarily used by quantum-based policies like Round Robin or MLFQ.
+ *
+ * @param policy A pointer to the Policy object.
+ * @param process A pointer to the Process for which to get the quantum.
+ * @return The time quantum for the process, or 0 if the policy doesn't use quanta
+ *         or the process doesn't have a specific quantum.
+ */
 int policy_get_quantum(Policy* policy, Process* process) {
     if (!policy) return 0;
-    _Policy* internal_policy = (_Policy*)policy;
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            return fifo_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        case POLICY_TYPE_LIFO:
-            return lifo_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        case POLICY_TYPE_SJF:
-            return sjf_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        case POLICY_TYPE_PRIORITY:
-            return priority_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        case POLICY_TYPE_RR:
-            return rr_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        case POLICY_TYPE_SRT:
-            return srt_policy_get_quantum(internal_policy->concrete_policy_data, process);
-        default:
-            return 0; // Default to no quantum
+    if (policy->vtable->get_quantum) {
+        return policy->vtable->get_quantum(policy->concrete_policy_data, process);
     }
+    return 0; // Policies that don't use quantum will return 0
 }
 
+/**
+ * @brief Notifies the policy to potentially demote a process (e.g., due to quantum expiry).
+ *
+ * This function is used by policies like MLFQ to move processes to lower priority
+ * queues after they have consumed their time slice or allotment.
+ * It's an optional callback; policies that don't need it can leave it NULL.
+ *
+ * @param policy A pointer to the Policy object.
+ * @param process A pointer to the Process to potentially demote.
+ */
 void policy_demote_process(Policy* policy, Process* process) {
     if (!policy) return;
-    _Policy* internal_policy = (_Policy*)policy;
-
-    switch (internal_policy->type) {
-        case POLICY_TYPE_FIFO:
-            fifo_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_LIFO:
-            lifo_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_SJF:
-            sjf_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_PRIORITY:
-            priority_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_RR:
-            rr_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        case POLICY_TYPE_SRT:
-            srt_policy_demote_process(internal_policy->concrete_policy_data, process);
-            break;
-        default:
-            // Default to no-op
-            break;
+    if (policy->vtable->demote_process) {
+        policy->vtable->demote_process(policy->concrete_policy_data, process);
     }
 }

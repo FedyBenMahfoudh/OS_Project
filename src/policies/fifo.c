@@ -1,89 +1,85 @@
 #include "../../headers/policies/fifo.h"
-#include "../../headers/data_structures/data_structures.h"
-
+#include "../../headers/data_structures/queue.h"
 #include <stdlib.h>
 
-// Define the Policy structure for FIFO
-struct Policy {
+// --- Internal FIFO Policy Data Structure ---
+typedef struct {
     Queue* queue;
-};
+} FifoPolicyData;
 
-/**
- * Creates a new FIFO policy.
- * @param quantum Time quantum (ignored for FIFO).
- * @return A pointer to the new Policy.
- */
-Policy* fifo_policy_create(int quantum) {
-    Policy* fifo_policy = (Policy*) malloc(sizeof(Policy));
-    if (!fifo_policy) return NULL;
+// --- Static (Private) Policy Functions ---
 
-    fifo_policy->queue = queue_create();
-    if (!fifo_policy->queue) {
-        free(fifo_policy);
+static void* fifo_create(int quantum) {
+    // Ignoring the quantum
+    (void)quantum; 
+    FifoPolicyData* policy_data = (FifoPolicyData*)malloc(sizeof(FifoPolicyData));
+    if (!policy_data) return NULL;
+
+    policy_data->queue = queue_create();
+    if (!policy_data->queue) {
+        free(policy_data);
         return NULL;
     }
-
-    return fifo_policy;
+    return policy_data;
 }
 
-/**
- * Destroys the FIFO policy and frees memory.
- * @param policy The policy to destroy.
- */
-void fifo_policy_destroy(Policy* policy) {
-    if (!policy) return;
-
-    queue_destroy(policy->queue);
-    free(policy);
+static void fifo_destroy(void* policy_data) {
+    if (!policy_data) return;
+    FifoPolicyData* fifo_data = (FifoPolicyData*)policy_data;
+    queue_destroy(fifo_data->queue);
+    free(fifo_data);
 }
 
-/**
- * Adds a process to the FIFO policy.
- * @param policy The policy.
- * @param process The process to add.
- */
-void fifo_policy_add_process(Policy* policy, Process* process) {
-    if ((!policy) || (!process)) return;
-
-    queue_enqueue(policy->queue, process);
+static void fifo_add_process(void* policy_data, Process* process) {
+    if (!policy_data || !process) return;
+    FifoPolicyData* fifo_data = (FifoPolicyData*)policy_data;
+    queue_enqueue(fifo_data->queue, process);
 }
 
-/**
- * Gets the next process to run from the FIFO policy.
- * @param policy The policy.
- * @return The next process to run, or NULL if none.
- */
-Process* fifo_policy_get_next_process(Policy* policy) {
-    if ((!policy) || (queue_is_empty(policy->queue))) return NULL;
-
-    return queue_dequeue(policy->queue);
+static Process* fifo_get_next_process(void* policy_data) {
+    if (!policy_data) return NULL;
+    FifoPolicyData* fifo_data = (FifoPolicyData*)policy_data;
+    if (queue_is_empty(fifo_data->queue)) return NULL;
+    return queue_dequeue(fifo_data->queue);
 }
 
+static void fifo_tick(void* policy_data) {
+    (void)policy_data; // No-op for FIFO
+}
 
-void fifo_policy_tick(Policy* policy) {}
-
-
-bool fifo_policy_needs_reschedule(Policy* policy, Process* running_process) {
-    // Rescheduling only when the process is idle
+static bool fifo_needs_reschedule(void* policy_data, Process* running_process) {
+    (void)policy_data;
+    // When the CPU is idle.
     return running_process == NULL;
 }
 
-/**
- * @brief Gets the time quantum for a specific process.
- * @return 0, as FIFO is not a quantum-based policy.
- */
-int fifo_policy_get_quantum(Policy* policy, Process* process) {
-    (void)policy;
+static int fifo_get_quantum(void* policy_data, Process* process) {
+    (void)policy_data;
     (void)process;
-    return 0; // Not applicable
+    return 0; 
 }
 
-/**
- * @brief Handles process demotion (quantum expiry).
- *        Does nothing, as FIFO is not a preemptive quantum-based policy.
- */
-void fifo_policy_demote_process(Policy* policy, Process* process) {
-    // No-op for FIFO
-    (void)policy;
-    (void)process;
+static void fifo_demote_process(void* policy_data, Process* process) {
+    (void)policy_data;
+    (void)process; 
+}
+
+// --- VTable Definition ---
+
+static const PolicyVTable fifo_vtable = {
+    .name = "fifo",
+    .create = fifo_create,
+    .destroy = fifo_destroy,
+    .add_process = fifo_add_process,
+    .get_next_process = fifo_get_next_process,
+    .tick = fifo_tick,
+    .needs_reschedule = fifo_needs_reschedule,
+    .get_quantum = fifo_get_quantum,
+    .demote_process = fifo_demote_process
+};
+
+// --- Public VTable Accessor ---
+
+const PolicyVTable* fifo_get_vtable() {
+    return &fifo_vtable;
 }

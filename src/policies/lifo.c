@@ -1,104 +1,85 @@
-/**
- * @file lifo.c
- * @brief Implementation of the Last-In-First-Out (LIFO) scheduling policy
- * 
- * This module implements the LIFO scheduling policy where the most recently added
- * process is the next to be executed. It uses a stack data structure to manage
- * the ready processes.
- */
-
 #include "../../headers/policies/lifo.h"
-#include "../../headers/data_structures/data_structures.h"
+#include "../../headers/data_structures/stack.h" // Assumes stack is in this path
 #include <stdlib.h>
 
-/**
- * @brief Policy structure for LIFO scheduling
- * 
- * This structure holds the internal state of the LIFO scheduler,
- * including the stack that stores the ready processes.
- */
-struct Policy {
-    Stack* ready_stack; 
-};
+// --- Internal LIFO Policy Data Structure ---
+typedef struct {
+    Stack* ready_stack;
+} LifoPolicyData;
 
-/**
- * @brief Creates and initializes a new LIFO policy instance
- * 
- * @param quantum Unused parameter (kept for interface compatibility)
- * @return Policy* Pointer to the newly created policy, or NULL on failure
- */
-Policy* lifo_policy_create(int quantum) {
-    Policy* lifo_policy = (Policy*)malloc(sizeof(Policy));
-    if (!lifo_policy) return NULL;
+// --- Static (Private) Policy Functions ---
 
-    lifo_policy->ready_stack = stack_create();
-    if (!lifo_policy->ready_stack) {
-        free(lifo_policy);
+static void* lifo_create(int quantum) {
+    // Ignoring the quantum
+    (void)quantum; 
+    LifoPolicyData* policy_data = (LifoPolicyData*)malloc(sizeof(LifoPolicyData));
+    if (!policy_data) return NULL;
+
+    policy_data->ready_stack = stack_create();
+    if (!policy_data->ready_stack) {
+        free(policy_data);
         return NULL;
     }
-
-    return (Policy*)lifo_policy;
+    return policy_data;
 }
 
-/**
- * @brief Destroys a LIFO policy instance and frees all associated resources
- * 
- * @param policy Pointer to the policy to be destroyed
- */
-void lifo_policy_destroy(Policy* policy) {
-    if (!policy) return;
-    
-    stack_destroy(policy->ready_stack);
-    free(policy);
+static void lifo_destroy(void* policy_data) {
+    if (!policy_data) return;
+    LifoPolicyData* lifo_data = (LifoPolicyData*)policy_data;
+    stack_destroy(lifo_data->ready_stack);
+    free(lifo_data);
 }
 
-/**
- * @brief Adds a process to the LIFO ready queue
- * 
- * @param policy The LIFO policy instance
- * @param process The process to be added to the ready queue
- */
-void lifo_policy_add_process(Policy* policy, Process* process) {
-    if (!policy || !process) return;
-    stack_push(policy->ready_stack, process);
+static void lifo_add_process(void* policy_data, Process* process) {
+    if (!policy_data || !process) return;
+    LifoPolicyData* lifo_data = (LifoPolicyData*)policy_data;
+    stack_push(lifo_data->ready_stack, process);
 }
 
-/**
- * @brief Retrieves the next process to be executed
- * 
- * @param policy The LIFO policy instance
- * @return Process* The next process to execute, or NULL if no processes are ready
- */
-Process* lifo_policy_get_next_process(Policy* policy) {
-    if (!policy || stack_is_empty(policy->ready_stack)) {
-        return NULL;
-    }
-    return stack_pop(policy->ready_stack);
+static Process* lifo_get_next_process(void* policy_data) {
+    if (!policy_data) return NULL;
+    LifoPolicyData* lifo_data = (LifoPolicyData*)policy_data;
+    if (stack_is_empty(lifo_data->ready_stack)) return NULL;
+    return stack_pop(lifo_data->ready_stack);
 }
 
-void lifo_policy_tick(Policy* policy) {}
+static void lifo_tick(void* policy_data) {
+    (void)policy_data;
+}
 
-bool lifo_policy_needs_reschedule(Policy* policy, Process* running_process) {
-    // Rescheduling only when the process is idle
+static bool lifo_needs_reschedule(void* policy_data, Process* running_process) {
+    (void)policy_data;
+    // When the CPU is idle.
     return running_process == NULL;
 }
 
-/**
- * @brief Gets the time quantum for a specific process.
- * @return 0, as LIFO is not a quantum-based policy.
- */
-int lifo_policy_get_quantum(Policy* policy, Process* process) {
-    (void)policy;
+static int lifo_get_quantum(void* policy_data, Process* process) {
+    (void)policy_data;
     (void)process;
-    return 0; // Not applicable
+    return 0; 
 }
 
-/**
- * @brief Handles process demotion (quantum expiry).
- *        Does nothing, as LIFO is not a preemptive quantum-based policy.
- */
-void lifo_policy_demote_process(Policy* policy, Process* process) {
-    // No-op for LIFO
-    (void)policy;
+static void lifo_demote_process(void* policy_data, Process* process) {
+    (void)policy_data;
     (void)process;
+}
+
+// --- VTable Definition ---
+
+static const PolicyVTable lifo_vtable = {
+    .name = "lifo",
+    .create = lifo_create,
+    .destroy = lifo_destroy,
+    .add_process = lifo_add_process,
+    .get_next_process = lifo_get_next_process,
+    .tick = lifo_tick,
+    .needs_reschedule = lifo_needs_reschedule,
+    .get_quantum = lifo_get_quantum,
+    .demote_process = lifo_demote_process
+};
+
+// --- Public VTable Accessor ---
+
+const PolicyVTable* lifo_get_vtable() {
+    return &lifo_vtable;
 }

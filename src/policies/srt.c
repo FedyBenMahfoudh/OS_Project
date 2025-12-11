@@ -1,145 +1,127 @@
 #include "../../headers/policies/srt.h"
-#include "../../headers/data_structures/data_structures.h"
+#include "../../headers/data_structures/min_heap.h"
 #include <stdlib.h>
 
-struct Policy {
+// --- Internal SRT Policy Data Structure ---
+typedef struct {
     MinHeap* ready_queue;
-    Process* current_process;
-};
+} SrtPolicyData;
 
-/**
- * @brief Comparator function for SRT (Shortest Remaining Time).
- * @param a First process.
- * @param b Second process.
- * @return <0 if a < b, 0 if a == b, >0 if a > b (based on remaining_burst_time).
- */
-static int srt_compare_processes(Process* a, Process* b) {
-    return a->remaining_burst_time - b->remaining_burst_time;
+// --- Comparator for the MinHeap ---
+static int srt_comparator(void* a, void* b) {
+    Process* p1 = (Process*)a;
+    Process* p2 = (Process*)b;
+
+    // Primary: Shortest Remaining Time First
+    if (p1->remaining_burst_time != p2->remaining_burst_time) {
+        return p1->remaining_burst_time - p2->remaining_burst_time;
+    }
+
+    // Secondary: Prefer processes that haven't run recently (or at all)
+    // Smaller last_executed_time comes first
+    if (p1->last_executed_time != p2->last_executed_time) {
+        return p1->last_executed_time - p2->last_executed_time;
+    }
+
+    // Tertiary: First Come First Served
+    return p1->arrival_time - p2->arrival_time;
 }
 
-/**
- * Creates a new SRT policy.
- * @param quantum Time quantum (ignored for SRT).
- * @return A pointer to the new Policy.
- */
-Policy* srt_policy_create(int quantum) {
+// --- Static (Private) Policy Functions ---
+
+static void* srt_create(int quantum) {
+    // Ignoring the quantum
     (void)quantum; 
+    SrtPolicyData* policy_data = (SrtPolicyData*)malloc(sizeof(SrtPolicyData));
+    if (!policy_data) return NULL;
 
-    Policy* srt_policy = (Policy*)malloc(sizeof(Policy));
-    if (!srt_policy) return NULL;
-
-    srt_policy->ready_queue = min_heap_create(srt_compare_processes);
-    if (!srt_policy->ready_queue) {
-        free(srt_policy);
+    policy_data->ready_queue = min_heap_create(srt_comparator);
+    if (!policy_data->ready_queue) {
+        free(policy_data);
         return NULL;
     }
-
-    srt_policy->current_process = NULL;
-    return srt_policy;
+    return policy_data;
 }
 
-/**
- * Destroys the SRT policy and frees memory.
- * @param policy The policy to destroy.
- */
-void srt_policy_destroy(Policy* policy) {
-    if (!policy) return;
-
-    min_heap_destroy(policy->ready_queue);
-    free(policy);
+static void srt_destroy(void* policy_data) {
+    if (!policy_data) return;
+    SrtPolicyData* srt_data = (SrtPolicyData*)policy_data;
+    min_heap_destroy(srt_data->ready_queue);
+    free(srt_data);
 }
 
-/**
- * Adds a process to the SRT policy.
- * @param policy The policy.
- * @param process The process to add.
- */
-void srt_policy_add_process(Policy* policy, Process* process) {
-    if (!policy || !process) return;
-
-    process->state = READY;
-    min_heap_push(policy->ready_queue, process);
+static void srt_add_process(void* policy_data, Process* process) {
+    if (!policy_data || !process) return;
+    SrtPolicyData* srt_data = (SrtPolicyData*)policy_data;
+    min_heap_push(srt_data->ready_queue, process);
 }
 
-/**
- * Gets the next process to run from the SRT policy.
- * @param policy The policy.
- * @return The next process to run, or NULL if none.
- */
-Process* srt_policy_get_next_process(Policy* policy) {
-    if (!policy) return NULL;
-
-    if (policy->current_process && 
-        policy->current_process->state != TERMINATED &&
-        policy->current_process->remaining_burst_time > 0) {
-        min_heap_push(policy->ready_queue, policy->current_process);
-    }
-
-    policy->current_process = min_heap_pop(policy->ready_queue);
-    if (policy->current_process) {
-        policy->current_process->state = RUNNING;
-    }
-    
-    return policy->current_process;
+static Process* srt_get_next_process(void* policy_data) {
+    if (!policy_data) return NULL;
+    SrtPolicyData* srt_data = (SrtPolicyData*)policy_data;
+    if (min_heap_is_empty(srt_data->ready_queue)) return NULL;
+    return min_heap_pop(srt_data->ready_queue);
 }
 
-/**
- * Called on each timer tick.
- * @param policy The policy.
- */
-void srt_policy_tick(Policy* policy) {
-    if (!policy || !policy->current_process) return;
-    
-    if (policy->current_process->remaining_burst_time > 0) {
-        policy->current_process->remaining_burst_time--;
-        policy->current_process->executed_time++;
-        
-        if (policy->current_process->remaining_burst_time <= 0) {
-            policy->current_process->state = TERMINATED;
-            //policy->current_process->finish_time = ?? idk hhh
-        }
-    }
+static void srt_tick(void* policy_data) {
+    // The logic of decrementing burst time should be in the scheduler engine,
+    // not in the policy's tick function. A policy should only manage its data structures.
+    // So, this is intentionally a no-op.
+    (void)policy_data;
 }
 
-/**
- * Determines if a reschedule is needed.
- * @param policy The policy.
- * @param running_process The currently running process.
- * @return True if a reschedule is needed, false otherwise.
- */
-bool srt_policy_needs_reschedule(Policy* policy, Process* running_process) {
-    if (!policy) return false;
-    
-    if (!running_process) return true;
-    
-    if (running_process->state == TERMINATED) return true;
-    
-    Process* shortest = min_heap_peek(policy->ready_queue);
-    if (shortest && shortest->remaining_burst_time < running_process->remaining_burst_time) {
+static bool srt_needs_reschedule(void* policy_data, Process* running_process) {
+    if (!policy_data) return true;
+    SrtPolicyData* srt_data = (SrtPolicyData*)policy_data;
+
+    // Scheduling a new process if the CPU is idle.
+    if (running_process == NULL) {
         return true;
     }
     
+    // Scheduling a new process if the running process has terminated.
+    if (running_process->state == TERMINATED) {
+        return true;
+    }
+
+    // Scheduling a new process if there's a process in the queue that has a shorter remaining time
+    // than the currently running process.
+    Process* shortest_in_queue = min_heap_peek(srt_data->ready_queue);
+    if (shortest_in_queue && shortest_in_queue->remaining_burst_time < running_process->remaining_burst_time) {
+        return true;
+    }
+
+    // Otherwise, letting the current process continue.
     return false;
 }
 
-/**
- * Gets the time quantum for a specific process.
- * @param policy The policy.
- * @param process The process.
- * @return The time quantum for the process.
- */
-int srt_policy_get_quantum(Policy* policy, Process* process) {
-    (void)policy;
+static int srt_get_quantum(void* policy_data, Process* process) {
+    (void)policy_data;
     (void)process;
-    return 0; // Not applicable
+    return 0;
 }
 
-/**
- * Handles process demotion (quantum expiry).
- * For SRT, we don't use quantum-based preemption, so this is a no-op.
- */
-void srt_policy_demote_process(Policy* policy, Process* process) {
-    // No-op for SRT
-    (void)policy;
+static void srt_demote_process(void* policy_data, Process* process) {
+    (void)policy_data;
     (void)process;
+}
+
+// --- VTable Definition ---
+
+static const PolicyVTable srt_vtable = {
+    .name = "srt",
+    .create = srt_create,
+    .destroy = srt_destroy,
+    .add_process = srt_add_process,
+    .get_next_process = srt_get_next_process,
+    .tick = srt_tick,
+    .needs_reschedule = srt_needs_reschedule,
+    .get_quantum = srt_get_quantum,
+    .demote_process = srt_demote_process
+};
+
+// --- Public VTable Accessor ---
+
+const PolicyVTable* srt_get_vtable() {
+    return &srt_vtable;
 }

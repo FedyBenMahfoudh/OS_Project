@@ -11,7 +11,8 @@ typedef enum {
     POLICY_TYPE_SJF,
     POLICY_TYPE_PRIORITY,
     POLICY_TYPE_RR,
-    POLICY_TYPE_SRT
+    POLICY_TYPE_SRT,
+    POLICY_TYPE_MLFQ
     // Add other policy types here as they are implemented
 } PolicyType;
 
