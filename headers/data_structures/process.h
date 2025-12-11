@@ -17,14 +17,15 @@ typedef struct Process {
     char name[32];
 
     // Process Initial Parameters
-    int arrival_time;
-    int burst_time;
-    int priority;
+    int arrival_time; // Time at which the process arrives
+    int burst_time; // Time required to complete the process
+    int priority; // Priority of the process
+    int original_index; // To preserve config file order
 
     // Process Followup Parameters (During Execution)
     ProcessState state;
-    int remaining_burst_time;
-    int executed_time;
+    int remaining_burst_time; // Time remaining to complete the process
+    int executed_time; // Time executed so far
 
     // Process Performance Metrics
     int start_time; // Start time of the first execution
@@ -35,8 +36,13 @@ typedef struct Process {
 
     // Process Preemption Tracking
     bool is_preempted;
-    int last_executed_time;
+    int last_executed_time; // Time at which the process was last executed
     int current_quantum_runtime; // Time running in the current time slice
+    
+    // MLFQ Tracking
+    int last_active_time;         // Time at which the process was last active (Used for tracking aging)
+    int current_queue_level;      // Current priority queue index
+    int time_spent_at_current_level; // For anti-gaming allotment
 } Process;
 
 #endif
