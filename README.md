@@ -1,4 +1,4 @@
-# Linux Multi-Tasks Scheduler
+# Linux Multi-Task Scheduler
 
 **PROJECT STATUS:** Core engine and scheduling algorithms are implemented and tested. Three interface versions are complete: CLI (command-line), TUI (terminal UI with ncurses), and GUI (graphical interface with GTK+3). The architecture and implementation are well-defined.
 
@@ -16,7 +16,8 @@ This project is a C-based multi-task scheduler simulator for a Linux-like enviro
 *   First-In, First-Out (FIFO)
 *   Last-In, First-Out (LIFO)
 *   Shortest Job First (SJF)
-*   Priority-based Scheduling
+*   Non-Preemptive Priority Scheduling
+*   Preemptive Priority Scheduling
 *   Shortest Remaining Time First (SRT)
 *   Round Robin (RR)
 *   Multi-level Feedback Queues (MLFQ)
@@ -30,6 +31,10 @@ The project is designed with a modular architecture, separating different concer
 *   **Policy Modules:** Each scheduling algorithm is implemented as a separate module that adheres to a common policy interface.
 *   **Data Structures:** A set of generic data structures like queues, stacks, and heaps are used by the engine and policies.
 *   **Output & Logging:** Generates output in the form of Gantt charts and logs to visualize the scheduling process and its results.
+
+## Documentation
+
+Detailed documentation, including scrum plans and architectural notes, can be found in the [`docs/`](docs/) directory.
 
 ## Configuration File Format
 
@@ -59,6 +64,9 @@ process P3 {
 
 ### CLI Version (Command-Line Interface)
 
+![CLI Screenshot 1](docs/images/cli_screenshot_1.png)
+![CLI Screenshot 2](docs/images/cli_screenshot_2.png)
+
 The basic command-line interface provides text-based output with Gantt charts and metrics.
 
 ```bash
@@ -75,7 +83,8 @@ When you run the program, an interactive menu will be displayed allowing you to 
 - FIFO (First In, First Out)
 - LIFO (Last In, First Out)
 - SJF (Shortest Job First)
-- Priority-based Scheduling
+- Non-Preemptive Priority-based Scheduling
+- Preemptive Priority-based Scheduling
 - SRT (Shortest Remaining Time)
 - RR (Round Robin) - will prompt for quantum value
 
@@ -86,6 +95,8 @@ When you run the program, an interactive menu will be displayed allowing you to 
 ```
 
 ### TUI Version (Terminal User Interface)
+
+![TUI Screenshot](docs/images/tui_screenshot.png)
 
 The TUI version provides an interactive, real-time visualization using ncurses with the following features:
 
@@ -109,6 +120,8 @@ The TUI version provides an interactive, real-time visualization using ncurses w
 ```
 
 ### GUI Version (Graphical User Interface)
+
+![GUI Screenshot](docs/images/gui_screenshot.png)
 
 The GUI version provides a modern GTK+3 interface with card-based layout:
 
