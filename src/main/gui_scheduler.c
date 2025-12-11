@@ -750,6 +750,7 @@ void create_window() {
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "CPU Scheduler Simulator");
     gtk_window_set_default_size(GTK_WINDOW(window), 1300, 950);
+    gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
     GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
