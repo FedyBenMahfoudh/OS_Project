@@ -83,6 +83,11 @@ bool queue_is_empty(const Queue* q) {
     return (q->size == 0);
 }
 
+// Getting the number of elements in the queue
+int queue_size(const Queue* q) {
+    return q ? q->size : 0;
+}
+
 // Freeing all the memory used by the queue;
 void queue_destroy(Queue* q) {
     while (!queue_is_empty(q)) {

@@ -24,6 +24,9 @@ Process* queue_peek(const Queue* q);
 // Verifying if a queue is empty
 bool queue_is_empty(const Queue* q);
 
+// Getting the number of elements in the queue
+int queue_size(const Queue* q);
+
 // Freeing all the memory used by the queue;
 void queue_destroy(Queue* q);
 
