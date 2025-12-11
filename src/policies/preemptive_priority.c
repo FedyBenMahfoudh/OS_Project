@@ -8,7 +8,7 @@ typedef struct {
 } PreemptivePriorityPolicyData;
 
 // --- Comparator for the MaxHeap ---
-static int preemptive_priority_comparator(void* a, void* b) {
+static int preemptive_priority_comparator(Process* a, Process* b) {
     Process* p1 = (Process*)a;
     Process* p2 = (Process*)b;
 

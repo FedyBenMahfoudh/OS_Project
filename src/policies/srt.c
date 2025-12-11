@@ -8,7 +8,7 @@ typedef struct {
 } SrtPolicyData;
 
 // --- Comparator for the MinHeap ---
-static int srt_comparator(void* a, void* b) {
+static int srt_comparator(Process* a, Process* b) {
     Process* p1 = (Process*)a;
     Process* p2 = (Process*)b;
 

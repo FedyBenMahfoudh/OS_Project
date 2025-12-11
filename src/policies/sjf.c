@@ -8,7 +8,7 @@ typedef struct {
 } SjfPolicyData;
 
 // --- Comparator for the MinHeap ---
-static int sjf_comparator(void* a, void* b) {
+static int sjf_comparator(Process* a, Process* b) {
     Process* p1 = (Process*)a;
     Process* p2 = (Process*)b;
     return p1->burst_time - p2->burst_time;
