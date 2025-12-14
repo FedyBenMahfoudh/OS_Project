@@ -10,25 +10,18 @@ typedef struct MinHeapNode MinHeapNode;
 typedef struct MinHeap MinHeap;
 
 
-// Comparator function type: returns <0 if a < b, 0 if a == b, >0 if a > b
 typedef int (*Comparator)(Process* a, Process* b);
 
-// Creating a min heap : Returns a pointer to an empty min heap
 MinHeap* min_heap_create(Comparator comp);
 
-// Adding a process to the min heap
 void min_heap_push(MinHeap* h, Process* p);
 
-// Pulling a process from the min heap (By removing it)
 Process* min_heap_pop(MinHeap* h);
 
-// Peeking at the process that is at the top of the min heap (Without removing it)
 Process* min_heap_peek(const MinHeap* h);
 
-// Verifying if a min heap is empty
 bool min_heap_is_empty(const MinHeap* h);
 
-// Freeing all the memory used by the min heap;
 void min_heap_destroy(MinHeap* h);
 
 #endif

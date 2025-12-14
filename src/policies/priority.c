@@ -2,27 +2,25 @@
 #include "../../headers/data_structures/max_heap.h"
 #include <stdlib.h>
 
-// --- Internal Priority Policy Data Structure ---
+
 typedef struct {
     MaxHeap* heap;
 } PriorityPolicyData;
 
-// --- Comparator for the MaxHeap ---
+
 static int priority_comparator(Process* a, Process* b) {
     Process* p1 = (Process*)a;
     Process* p2 = (Process*)b;
-    // Higher priority value is greater
+    
     if (p1->priority != p2->priority) {
         return p1->priority - p2->priority;
     }
-    // Tie-break with arrival time: earlier arrival is greater
+    
     return p2->arrival_time - p1->arrival_time;
 }
 
-// --- Static (Private) Policy Functions ---
-
 static void* priority_create(int quantum) {
-    // Ignoring the quantum
+    
     (void)quantum; 
     PriorityPolicyData* policy_data = (PriorityPolicyData*)malloc(sizeof(PriorityPolicyData));
     if (!policy_data) return NULL;
@@ -61,7 +59,6 @@ static void priority_tick(void* policy_data) {
 
 static bool priority_needs_reschedule(void* policy_data, Process* running_process) {
     (void)policy_data;
-    // When the CPU is idle.
     return running_process == NULL;
 }
 
@@ -76,8 +73,6 @@ static void priority_demote_process(void* policy_data, Process* process) {
     (void)process; 
 }
 
-// --- VTable Definition ---
-
 static const PolicyVTable priority_vtable = {
     .name = "priority",
     .create = priority_create,
@@ -89,8 +84,6 @@ static const PolicyVTable priority_vtable = {
     .get_quantum = priority_get_quantum,
     .demote_process = priority_demote_process
 };
-
-// --- Public VTable Accessor ---
 
 const PolicyVTable* priority_get_vtable() {
     return &priority_vtable;

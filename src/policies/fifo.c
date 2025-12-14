@@ -2,15 +2,15 @@
 #include "../../headers/data_structures/queue.h"
 #include <stdlib.h>
 
-// --- Internal FIFO Policy Data Structure ---
+
 typedef struct {
     Queue* queue;
 } FifoPolicyData;
 
-// --- Static (Private) Policy Functions ---
+
 
 static void* fifo_create(int quantum) {
-    // Ignoring the quantum
+    
     (void)quantum; 
     FifoPolicyData* policy_data = (FifoPolicyData*)malloc(sizeof(FifoPolicyData));
     if (!policy_data) return NULL;
@@ -44,12 +44,12 @@ static Process* fifo_get_next_process(void* policy_data) {
 }
 
 static void fifo_tick(void* policy_data) {
-    (void)policy_data; // No-op for FIFO
+    (void)policy_data; 
 }
 
 static bool fifo_needs_reschedule(void* policy_data, Process* running_process) {
     (void)policy_data;
-    // When the CPU is idle.
+    
     return running_process == NULL;
 }
 
@@ -64,7 +64,6 @@ static void fifo_demote_process(void* policy_data, Process* process) {
     (void)process; 
 }
 
-// --- VTable Definition ---
 
 static const PolicyVTable fifo_vtable = {
     .name = "fifo",
@@ -78,7 +77,6 @@ static const PolicyVTable fifo_vtable = {
     .demote_process = fifo_demote_process
 };
 
-// --- Public VTable Accessor ---
 
 const PolicyVTable* fifo_get_vtable() {
     return &fifo_vtable;

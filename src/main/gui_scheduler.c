@@ -1,12 +1,3 @@
-/**
- * @file gui_scheduler.c
- * @brief Implements a graphical user interface for the CPU scheduler simulator using GTK+.
- *
- * This file sets up the main window, various panels (process info, status, Gantt chart, metrics),
- * and controls for selecting scheduling policies and simulation parameters. It visualizes
- * the simulation in real-time and displays performance metrics.
- */
-
 #include <gtk/gtk.h>
 #include <cairo.h>
 #include <stdio.h>

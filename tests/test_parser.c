@@ -3,12 +3,12 @@
 #include "../headers/parser/config_parser.h"
 #include "../headers/data_structures/process.h"
 
-// Returns 1 in case of an error, OTHERWISE 0.
+
 int main(int argc, char *argv[]) {
-    // Setting a default config file
+    
     const char* config_filepath = "configs/test1.conf";
     
-    // Case : Test run with a different config file
+    
     if (argc > 1) {
         config_filepath = argv[1];
     }
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Basic sanity check
+    
     if (process_count <= 0) {
         fprintf(stderr, "TEST FAILED: The parser returned 0 or fewer processes.\n");
         free(processes);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     }
     printf("--------------------------------------------------\n");
 
-    // CRITICAL: Free the memory allocated by the parser
+    
     free(processes);
     processes = NULL;
 

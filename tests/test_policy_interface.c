@@ -5,25 +5,19 @@
 
 void test_fifo_creation() {
     printf("Testing valid policy creation ('fifo'...).\n");
-    // 1. Create the policy using the dispatcher
     Policy* policy = policy_create("fifo", 0);
 
-    // 2. Assert that the policy was created successfully
     assert(policy != NULL);
     printf("  ✅ Policy handle is not NULL.\n");
-    // Removed assertions about policy->type and policy->concrete_policy_data as Policy is now opaque.
 
-    // 4. Clean up the policy
     policy_destroy(policy);
     printf("  ✅ Policy destroyed successfully.\n");
 }
 
 void test_invalid_policy_creation() {
     printf("Testing invalid policy creation ('nonexistent'...).\n");
-    // 1. Attempt to create a policy that does not exist
     Policy* policy = policy_create("nonexistent", 0);
 
-    // 2. Assert that the creation failed and returned NULL
     assert(policy == NULL);
     printf("  ✅ Policy creation correctly returned NULL for an invalid name.\n");
 }

@@ -12,7 +12,6 @@ struct MinHeap {
     Comparator comp;
 };
 
-// Helper function to resize the heap
 static void min_heap_resize(MinHeap* h) {
     int new_capacity = h->capacity * 2;
     Process** new_data = realloc(h->data, new_capacity * sizeof(Process*));
@@ -22,27 +21,23 @@ static void min_heap_resize(MinHeap* h) {
     }
 }
 
-// Helper function to swap two processes
 static void swap(Process** a, Process** b) {
     Process* temp = *a;
     *a = *b;
     *b = temp;
 }
 
-// Helper function to maintain heap property going up
 static void min_heapify_up(MinHeap* h, int index) {
     if (index == 0) return;
 
     int parent_index = (index - 1) / 2;
     
-    // Use comparator: if child < parent, swap
     if (h->comp(h->data[index], h->data[parent_index]) < 0) {
         swap(&h->data[index], &h->data[parent_index]);
         min_heapify_up(h, parent_index);
     }
 }
 
-// Helper function to maintain heap property going down
 static void min_heapify_down(MinHeap* h, int index) {
     int smallest = index;
     int left_child = 2 * index + 1;
@@ -62,7 +57,6 @@ static void min_heapify_down(MinHeap* h, int index) {
     }
 }
 
-// Creating a min heap : Returns a pointer to an empty min heap
 MinHeap* min_heap_create(Comparator comp) {
     MinHeap* h = (MinHeap*) malloc(sizeof(MinHeap));
     if (!h) return NULL;
@@ -80,7 +74,6 @@ MinHeap* min_heap_create(Comparator comp) {
     return h;
 }
 
-// Adding a process to the min heap
 void min_heap_push(MinHeap* h, Process* p) {
     if (h->size == h->capacity) {
         min_heap_resize(h);
@@ -91,13 +84,11 @@ void min_heap_push(MinHeap* h, Process* p) {
     h->size++;
 }
 
-// Pulling a process from the min heap (By removing it)
 Process* min_heap_pop(MinHeap* h) {
     if (h->size == 0) return NULL;
 
     Process* root = h->data[0];
     
-    // Move last element to root
     h->data[0] = h->data[h->size - 1];
     h->size--;
 
@@ -108,18 +99,15 @@ Process* min_heap_pop(MinHeap* h) {
     return root;
 }
 
-// Peeking at the process that is at the top of the min heap (Without removing it)
 Process* min_heap_peek(const MinHeap* h) {
     if (h->size == 0) return NULL;
     return h->data[0];
 }
 
-// Verifying if a min heap is empty
 bool min_heap_is_empty(const MinHeap* h) {
     return (h->size == 0);
 }
 
-// Freeing all the memory used by the min heap;
 void min_heap_destroy(MinHeap* h) {
     if (h) {
         if (h->data) {

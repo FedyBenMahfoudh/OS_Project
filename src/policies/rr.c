@@ -2,13 +2,10 @@
 #include "../../headers/data_structures/queue.h"
 #include <stdlib.h>
 
-// --- Internal RR Policy Data Structure ---
 typedef struct {
     Queue* ready_queue;
     int quantum;
 } RrPolicyData;
-
-// --- Static (Private) Policy Functions ---
 
 static void* rr_create(int quantum) {
     RrPolicyData* policy_data = (RrPolicyData*)malloc(sizeof(RrPolicyData));
@@ -19,8 +16,6 @@ static void* rr_create(int quantum) {
         free(policy_data);
         return NULL;
     }
-
-    // Making the quantum atleast 1
     policy_data->quantum = (quantum > 0) ? quantum : 1;
     return policy_data;
 }
@@ -52,7 +47,7 @@ static void rr_tick(void* policy_data) {
 static bool rr_needs_reschedule(void* policy_data, Process* running_process) {
     if (!policy_data) return true;
     RrPolicyData* rr_data = (RrPolicyData*)policy_data;
-    // When the CPU is idle OR if the running process has used up its quantum
+    
     return running_process == NULL || (running_process->current_quantum_runtime >= rr_data->quantum);
 }
 
@@ -66,13 +61,11 @@ static int rr_get_quantum(void* policy_data, Process* process) {
 static void rr_demote_process(void* policy_data, Process* process) {
     if (!policy_data || !process) return;
     RrPolicyData* rr_data = (RrPolicyData*)policy_data;
-    // Resetting the quantum runtime
+    
     process->current_quantum_runtime = 0;
-    // Re-adding the process to the end of the queue 
+    
     rr_add_process(rr_data, process);
 }
-
-// --- VTable Definition ---
 
 static const PolicyVTable rr_vtable = {
     .name = "rr",
@@ -85,8 +78,6 @@ static const PolicyVTable rr_vtable = {
     .get_quantum = rr_get_quantum,
     .demote_process = rr_demote_process
 };
-
-// --- Public VTable Accessor ---
 
 const PolicyVTable* rr_get_vtable() {
     return &rr_vtable;

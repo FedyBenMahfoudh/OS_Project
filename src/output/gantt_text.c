@@ -3,7 +3,7 @@
 #include <string.h>
 #include "../../headers/output/gantt_text.h"
 
-// Helper to find the index of a process in the processes array by name
+
 static int get_process_index(const char* name, Process* processes, int count) {
     for (int i = 0; i < count; i++) {
         if (strcmp(processes[i].name, name) == 0) {
@@ -19,7 +19,7 @@ void print_gantt_chart(const SimulationResult* results) {
         return;
     }
 
-    // 1. Determine total duration
+    
     int total_time = 0;
     for (int i = 0; i < results->process_count; i++) {
         if (results->processes[i].finish_time > total_time) {
@@ -27,19 +27,19 @@ void print_gantt_chart(const SimulationResult* results) {
         }
     }
     
-    // Fallback if finishes not populated properly but events exist
+    
     if (total_time == 0 && results->gantt_event_count > 0) {
         total_time = results->gantt_chart[results->gantt_event_count - 1].time;
     }
 
-    // 2. Prepare grid
+    
     char* grid = (char*)calloc(results->process_count * total_time, sizeof(char));
     if (!grid) {
         fprintf(stderr, "Memory allocation failed for Gantt grid.\n");
         return;
     }
 
-    // 3. Fill grid
+    
     for (int i = 0; i < results->gantt_event_count; i++) {
         int start_t = results->gantt_chart[i].time;
         int end_t = (i + 1 < results->gantt_event_count) ? results->gantt_chart[i+1].time : total_time;
@@ -54,30 +54,21 @@ void print_gantt_chart(const SimulationResult* results) {
         }
     }
 
-    // 4. Print Improved Chart
-    // Design:
-    //            00 01 02 03
-    //            |--|--|--|
-    // Name       |██|  |  |
-    //            +--+--+--+
 
-    // A. Print Header (Time Ticks)
-    printf("           "); // 11 spaces padding
+    printf("           "); 
     for (int t = 0; t <= total_time; t++) {
-        printf("%02d ", t); // 3 chars width per tick
+        printf("%02d ", t); 
     }
     printf("\n");
 
-    // B. Ruler / Top Separator
     printf("           ");
     for (int t = 0; t < total_time; t++) {
         printf("|--");
     }
     printf("|\n");
-
-    // C. Rows
+    
     for (int p = 0; p < results->process_count; p++) {
-        printf("%-10s ", results->processes[p].name); // 10 chars + 1 space = 11 chars
+        printf("%-10s ", results->processes[p].name); 
         
         for (int t = 0; t < total_time; t++) {
             printf("|");
@@ -88,9 +79,9 @@ void print_gantt_chart(const SimulationResult* results) {
                 printf("  ");
             }
         }
-        printf("|\n"); // Closure
+        printf("|\n"); 
 
-        // D. Separator between rows
+        
         printf("           ");
         for (int t = 0; t < total_time; t++) {
             printf("+--");

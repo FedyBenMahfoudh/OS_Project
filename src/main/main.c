@@ -10,7 +10,6 @@
 #include "../../headers/utils/utils.h"
 
 int main(int argc, char* argv[]) {
-    // 1. Parse command-line arguments
     CLIParams cli_params;
     if (parse_arguments(argc, argv, &cli_params) != 0) {
         return EXIT_FAILURE;
@@ -20,7 +19,6 @@ int main(int argc, char* argv[]) {
     printf("║       Linux Multi-Tasks Scheduler Simulator       ║\n");
     printf("╚═══════════════════════════════════════════════════╝\n");
 
-    // 1.5 Parse and display processes
     int process_count = 0;
     Process* processes = parse_config_file(cli_params.config_filepath, &process_count);
     
@@ -31,14 +29,11 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // 2. Get policy selection from user interactively
     char* selected_policy = NULL;
     if (!get_policy_input(&selected_policy)) {
-        // Error message already printed by get_policy_input
         return EXIT_FAILURE;
     }
 
-    // 3. Handle Round Robin or Multilevel Feedback quantum input
     int quantum = 0;
     if (strcmp(selected_policy, "rr") == 0 || strcmp(selected_policy, "mlfq") == 0) {
         printf("\nPolicy '%s' selected.\n", selected_policy);
@@ -52,7 +47,6 @@ int main(int argc, char* argv[]) {
         while ((c = getchar()) != '\n' && c != EOF); 
     }
 
-    // 4. Configure Simulation Parameters
     SimParameters sim_params;
     sim_params.config_filepath = cli_params.config_filepath;
     sim_params.policy_name = selected_policy;
@@ -67,7 +61,6 @@ int main(int argc, char* argv[]) {
     if (quantum > 0) printf("    Quantum: %d\n", sim_params.quantum);
     printf("-----------------------------------------------------\n\n");
 
-    // 5. Run Simulation
     SimulationResult* results = run_simulation(&sim_params);
 
     if (results == NULL) {

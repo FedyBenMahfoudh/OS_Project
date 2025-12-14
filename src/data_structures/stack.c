@@ -8,14 +8,11 @@ struct StackNode {
     struct StackNode* next;
 };
 
-
 struct Stack {
     StackNode* top;
     int size;
 };
 
-
-// Creating a stack : Returns a pointer to an empty stack
 Stack* stack_create() {
     Stack* s = malloc(sizeof(Stack));
 
@@ -27,8 +24,6 @@ Stack* stack_create() {
     return s;
 }
 
-
-// Inserting a process at the top of the stack
 void stack_push(Stack* s, Process* p) {
     StackNode* node = (StackNode*) malloc(sizeof(StackNode));
     if (!node) return;
@@ -42,7 +37,6 @@ void stack_push(Stack* s, Process* p) {
     return;
 }
 
-// Pulling a process from the top of the stack (By removing it)
 Process* stack_pop(Stack* s) {
     if (!s->top) return NULL;
 
@@ -55,18 +49,15 @@ Process* stack_pop(Stack* s) {
     return p;
 }
 
-// Peeking at the process that is at the top of the stack (Without removing it)
 Process* stack_peek(const Stack* s) {
     if (!s->top) return NULL;
     return s->top->process;
 }
 
-// Verifying if a stack is empty
 bool stack_is_empty(const Stack* s) {
     return (s->size == 0);
 }
 
-// Freeing all the memory used by the stack;
 void stack_destroy(Stack* s) {
     while (!stack_is_empty(s)) {
         stack_pop(s);

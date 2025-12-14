@@ -7,16 +7,16 @@
 #include "../../headers/engine/scheduler_engine.h"
 #include "../../headers/parser/config_parser.h"
 
-// Window pointers for different panels
-WINDOW *title_win;
-WINDOW *process_info_win;        // Left: Basic process info
-WINDOW *status_win;              // Right: Running + Ready queue
-WINDOW *gantt_win;               // Center: Gantt chart
-WINDOW *performance_win;         // Bottom-left: Performance metrics
-WINDOW *metrics_win;             // Bottom-right: Overall metrics
-WINDOW *control_win;             // Bottom: Controls
 
-// Global state for TUI
+WINDOW *title_win;
+WINDOW *process_info_win;        
+WINDOW *status_win;              
+WINDOW *gantt_win;               
+WINDOW *performance_win;         
+WINDOW *metrics_win;             
+WINDOW *control_win;             
+
+
 typedef struct {
     bool paused;
     int speed_ms;
@@ -27,34 +27,27 @@ typedef struct {
 
 TUIState tui_state = {false, 1000, false, false, 0};
 
-// Initialize ncurses and create windows
+
 void init_tui() {
     initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);  // Non-blocking input
-    curs_set(0);  // Hide cursor
+    nodelay(stdscr, TRUE);  
+    curs_set(0);  
     
-    // Enable colors
+    
     if (has_colors()) {
         start_color();
-        init_pair(1, COLOR_GREEN, COLOR_BLACK);   // Running
-        init_pair(2, COLOR_YELLOW, COLOR_BLACK);  // Ready
-        init_pair(3, COLOR_RED, COLOR_BLACK);     // Terminated
-        init_pair(4, COLOR_CYAN, COLOR_BLACK);    // Header
-        init_pair(5, COLOR_WHITE, COLOR_BLUE);    // Status bar
+        init_pair(1, COLOR_GREEN, COLOR_BLACK);   
+        init_pair(2, COLOR_YELLOW, COLOR_BLACK);  
+        init_pair(3, COLOR_RED, COLOR_BLACK);     
+        init_pair(4, COLOR_CYAN, COLOR_BLACK);    
+        init_pair(5, COLOR_WHITE, COLOR_BLUE);    
     }
     
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
-    
-    // New Layout:
-    // Row 0-2:     Title (centered, 3 lines)
-    // Row 3-16:    Left: Process Info (14 lines) | Right: Running/Queue (14 lines) [+5 rows]
-    // Row 17-(max_y-15): Gantt Chart [-10 rows]
-    // Row (max_y-14)-(max_y-4): Left: Performance (11 lines) | Right: Metrics (11 lines) [+5 rows]
-    // Row (max_y-3)-(max_y-1): Controls (3 lines)
     
     int half_width = max_x / 2;
     int gantt_start = 17;
@@ -71,7 +64,7 @@ void init_tui() {
     
     refresh();
 }
-// Cleanup ncurses
+
 void cleanup_tui() {
     delwin(title_win);
     delwin(process_info_win);
@@ -82,7 +75,7 @@ void cleanup_tui() {
     delwin(control_win);
     endwin();
 }
-// Draw centered title
+
 void draw_title(const char* policy, int current_time) {
     werase(title_win);
     box(title_win, 0, 0);
@@ -102,19 +95,19 @@ void draw_title(const char* policy, int current_time) {
     
     wrefresh(title_win);
 }
-// Draw process basic info (left panel)
+
 void draw_process_info(Process* processes, int count) {
     werase(process_info_win);
     box(process_info_win, 0, 0);
     
     mvwprintw(process_info_win, 0, 2, "[ PROCESS INFO ]");
     
-    // Header
+    
     wattron(process_info_win, A_BOLD);
     mvwprintw(process_info_win, 1, 2, "Name   Arr Bst Pri Rem Exec");
     wattroff(process_info_win, A_BOLD);
     
-    // Process rows (limit to 6 visible)
+    
     for (int i = 0; i < count && i < 6; i++) {
         int color = COLOR_PAIR(0);
         if (processes[i].state == RUNNING) color = COLOR_PAIR(1);
@@ -137,14 +130,14 @@ void draw_process_info(Process* processes, int count) {
     
     wrefresh(process_info_win);
 }
-// Draw status panel (right panel - running + ready queue)
+
 void draw_status(Process* running, Process* all_procs, int count) {
     werase(status_win);
     box(status_win, 0, 0);
     
     mvwprintw(status_win, 0, 2, "[ STATUS ]");
     
-    // Running process
+    
     wattron(status_win, A_BOLD);
     mvwprintw(status_win, 1, 2, "Running:");
     wattroff(status_win, A_BOLD);
@@ -162,12 +155,12 @@ void draw_status(Process* running, Process* all_procs, int count) {
         wattroff(status_win, A_DIM);
     }
     
-    // Ready queue
+    
     wattron(status_win, A_BOLD);
     mvwprintw(status_win, 4, 2, "Ready Queue:");
     wattroff(status_win, A_BOLD);
     
-    // Calculate how many rows we can display
+    
     int max_y;
     getmaxyx(status_win, max_y, (int){0});
     int max_queue_y = max_y - 2;
@@ -192,7 +185,7 @@ void draw_status(Process* running, Process* all_procs, int count) {
     
     wrefresh(status_win);
 }
-// Draw Gantt chart with all processes as rows
+
 void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs, 
                       int proc_count, int current_time, bool is_final) {
     werase(gantt_win);
@@ -205,9 +198,9 @@ void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs,
     int max_x;
     getmaxyx(gantt_win, (int){0}, max_x);
     
-    // Calculate how many time units we can display
-    int time_offset = 12;  // Space for process names
-    int time_width = 3;    // 3 chars per time unit (handles up to 2-digit numbers + space)
+    
+    int time_offset = 12;  
+    int time_width = 3;    
     int max_display_time = (max_x - time_offset - 3) / time_width;
     int display_end = current_time < max_display_time ? current_time : max_display_time;
     for (int t = tui_state.gantt_offset; t <= display_end + tui_state.gantt_offset && t <= current_time; t++) {
@@ -223,12 +216,12 @@ void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs,
             mvwprintw(gantt_win, 2, time_offset + 6 + display_pos * time_width, "---");
         }
     }
-    // Draw each process as a row using original_index and sorting
-    // Create temp array
+    
+    
     Process** sorted_procs = malloc(sizeof(Process*) * proc_count);
     for (int i=0; i<proc_count; i++) sorted_procs[i] = &all_procs[i];
     
-    // Sort
+    
     for (int i=0; i<proc_count-1; i++) {
         for (int j=0; j<proc_count-i-1; j++) {
             if (sorted_procs[j]->original_index > sorted_procs[j+1]->original_index) {
@@ -238,11 +231,11 @@ void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs,
             }
         }
     }
-    for (int p = 0; p < proc_count && p < 14; p++) {  // Limit to available height
+    for (int p = 0; p < proc_count && p < 14; p++) {  
         int row = 3 + p;
         Process* current_p = sorted_procs[p];
         
-        // Process name
+        
         int color = COLOR_PAIR(0);
         if (current_p->state == RUNNING) color = COLOR_PAIR(1);
         else if (current_p->state == READY) color = COLOR_PAIR(2);
@@ -252,11 +245,11 @@ void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs,
         mvwprintw(gantt_win, row, 2, "%-8s |", current_p->name);
         wattroff(gantt_win, color);
         
-        // Draw execution timeline for this process
+        
         for (int t = tui_state.gantt_offset; t <= display_end + tui_state.gantt_offset && t <= current_time; t++) {
             int display_pos = t - tui_state.gantt_offset;
             if (display_pos < 0 || display_pos > max_display_time) continue;
-            // Check if this process was running at time t
+            
             bool was_running = false;
             
             for (int e = 0; e < event_count; e++) {
@@ -284,22 +277,22 @@ void draw_gantt_chart(GanttEvent* events, int event_count, Process* all_procs,
 }
 
 
-// Draw performance metrics (bottom-left panel)
+
 void draw_performance_metrics(Process* processes, int count) {
     werase(performance_win);
     box(performance_win, 0, 0);
     
     mvwprintw(performance_win, 0, 2, "[ PROCESS PERFORMANCE ]");
     
-    // Header
+    
     wattron(performance_win, A_BOLD);
     mvwprintw(performance_win, 1, 2, "Name   Start Finish Wait  TAT   Resp");
     wattroff(performance_win, A_BOLD);
     
-    // Process rows - show up to 3 processes
+    
     int max_y;
     getmaxyx(performance_win, max_y, (int){0});
-    int max_rows = max_y - 3;  // Leave space for border and header
+    int max_rows = max_y - 3;  
     
     for (int i = 0; i < count && i < max_rows; i++) {
         int color = COLOR_PAIR(0);
@@ -321,7 +314,7 @@ void draw_performance_metrics(Process* processes, int count) {
     
     wrefresh(performance_win);
 }
-// Draw overall metrics (bottom-right panel)
+
 void draw_overall_metrics(float avg_wait, float avg_turnaround, float cpu_util) {
     werase(metrics_win);
     box(metrics_win, 0, 0);
@@ -345,7 +338,7 @@ void draw_overall_metrics(float avg_wait, float avg_turnaround, float cpu_util) 
     
     wrefresh(metrics_win);
 }
-// Draw control panel (bottom)
+
 void draw_controls() {
     werase(control_win);
     box(control_win, 0, 0);
@@ -368,7 +361,7 @@ void draw_controls() {
     wrefresh(control_win);
 }
 
-// Handle keyboard input
+
 void handle_input() {
     int ch = getch();
     
@@ -392,19 +385,19 @@ void handle_input() {
             else tui_state.gantt_offset = 0;
             break;
         case KEY_RESIZE:
-             // Cleaner resize handling
+             
              cleanup_tui();
              init_tui();
              break;
         case '+':
-        case '=': // Handle +/mapped key
+        case '=': 
             if (tui_state.speed_ms > 100) tui_state.speed_ms -= 100;
             break;
         case '-':
-        case '_': // Handle -/mapped key
+        case '_': 
             if (tui_state.speed_ms < 3500) tui_state.speed_ms += 100;
             break;
-        case '>': // Keep old bindings for compatibility/scrolling
+        case '>': 
             tui_state.gantt_offset += 1;
             break;
         case '<':
@@ -414,13 +407,13 @@ void handle_input() {
 }
 
 int main(int argc, char* argv[]) {
-    // Parse arguments (reuse CLI parser)
+    
     CLIParams cli_params;
     if (parse_arguments(argc, argv, &cli_params) != 0) {
         return EXIT_FAILURE;
     }
     
-    // Parse config file
+    
     int process_count = 0;
     Process* processes = parse_config_file(cli_params.config_filepath, &process_count);
     
@@ -429,33 +422,33 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     
-    // Get policy selection
+    
     char* selected_policy = NULL;
     if (!get_policy_input(&selected_policy)) {
         free(processes);
         return EXIT_FAILURE;
     }
     
-    // Get quantum if RR or MLFQ
+    
     int quantum = 0;
     if (strcmp(selected_policy, "rr") == 0 || strcmp(selected_policy, "mlfq") == 0) {
         printf("Enter time quantum (base): ");
         scanf("%d", &quantum);
     }
     
-    // Initialize TUI
+    
     init_tui();
     
-    // Main simulation loop (allows restart)
+    
     do {
-        // Reset all state flags for fresh start
+        
         tui_state.should_restart = false;
         tui_state.should_quit = false;
         tui_state.should_quit = false;
-        tui_state.paused = false;  // Ensure not paused on restart
+        tui_state.paused = false;  
         tui_state.gantt_offset = 0;
         
-        // Reload processes from config file for fresh simulation
+        
         int fresh_process_count = 0;
         Process* fresh_processes = parse_config_file(cli_params.config_filepath, &fresh_process_count);
         
@@ -465,25 +458,25 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
         
-        // Live update callback for TUI
+        
         void tui_tick_callback(int time, Process* procs, int count, Process* running, 
                                GanttEvent* events, int event_count) {
-            // Handle user input
+            
             handle_input();
             
-            // Exit if requested
+            
             if (tui_state.should_quit || tui_state.should_restart) {
                 return;
             }
             
-            // Wait if paused
+            
             while (tui_state.paused && !tui_state.should_quit && !tui_state.should_restart) {
                 handle_input();
                 draw_controls();
                 usleep(50000);
             }
             
-            // Calculate current metrics (rough estimate during simulation)
+            
             float avg_wait = 0, avg_turnaround = 0, cpu_util = 0;
             int completed = 0;
             
@@ -504,7 +497,7 @@ int main(int argc, char* argv[]) {
                 cpu_util = (running != NULL) ? 100.0 : 0.0;
             }
             
-            // Update all displays
+            
             draw_title(selected_policy, time);
             draw_process_info(procs, count);
             draw_status(running, procs, count);
@@ -513,26 +506,26 @@ int main(int argc, char* argv[]) {
             draw_overall_metrics(avg_wait, avg_turnaround, cpu_util);
             draw_controls();
             
-            // Delay based on speed setting, but check input frequently for responsiveness
-            int sleep_chunks = tui_state.speed_ms / 50;  // Break into 50ms chunks
+            
+            int sleep_chunks = tui_state.speed_ms / 50;  
             for (int i = 0; i < sleep_chunks && !tui_state.should_quit && !tui_state.should_restart; i++) {
                 usleep(50000); 
                 handle_input();
             }
         }
         
-        // Configure simulation parameters
+        
         SimParameters sim_params;
         sim_params.config_filepath = cli_params.config_filepath;
         sim_params.policy_name = selected_policy;
         sim_params.quantum = quantum;
-        sim_params.verbose = false;  // Don't print logs to stdout
+        sim_params.verbose = false;  
         sim_params.tick_callback = tui_tick_callback;
         
-        // Run simulation with live updates
+        
         SimulationResult* results = run_simulation(&sim_params);
         
-        // Show final results
+        
         if (results && !tui_state.should_quit && !tui_state.should_restart) {
             int final_time = 0;
             for (int i = 0; i < results->process_count; i++) {
@@ -552,13 +545,13 @@ int main(int argc, char* argv[]) {
                                  results->cpu_utilization);
             draw_controls();
             
-            // Show "Simulation Complete" message
+            
             attron(A_BOLD | COLOR_PAIR(1));
             mvprintw(LINES - 4, (COLS - 50) / 2, "Simulation Complete! Press R to restart or Q to exit");
             attroff(A_BOLD | COLOR_PAIR(1));
             refresh();
             
-            // Wait for user to quit or restart
+            
             nodelay(stdscr, FALSE);
             int ch;
             while ((ch = getch()) != EOF) {
@@ -590,7 +583,7 @@ int main(int argc, char* argv[]) {
                                           results->average_turnaround_time,
                                           results->cpu_utilization);
                      draw_controls();
-                      // Show "Simulation Complete" message
+                      
                     attron(A_BOLD | COLOR_PAIR(1));
                     mvprintw(LINES - 4, (COLS - 50) / 2, "Simulation Complete! Press R to restart or Q to exit");
                     attroff(A_BOLD | COLOR_PAIR(1));
@@ -600,7 +593,7 @@ int main(int argc, char* argv[]) {
             nodelay(stdscr, TRUE);
         }
         
-        // Cleanup this simulation run
+        
         if (results) {
             free_simulation_results(results);
         }
@@ -608,7 +601,7 @@ int main(int argc, char* argv[]) {
         
     } while (tui_state.should_restart && !tui_state.should_quit);
     
-    // Cleanup
+    
     cleanup_tui();
     free(processes);
     free(selected_policy);

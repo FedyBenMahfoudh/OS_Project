@@ -1,16 +1,13 @@
 #include "../../headers/policies/lifo.h"
-#include "../../headers/data_structures/stack.h" // Assumes stack is in this path
+#include "../../headers/data_structures/stack.h" 
 #include <stdlib.h>
 
-// --- Internal LIFO Policy Data Structure ---
 typedef struct {
     Stack* ready_stack;
 } LifoPolicyData;
 
-// --- Static (Private) Policy Functions ---
 
 static void* lifo_create(int quantum) {
-    // Ignoring the quantum
     (void)quantum; 
     LifoPolicyData* policy_data = (LifoPolicyData*)malloc(sizeof(LifoPolicyData));
     if (!policy_data) return NULL;
@@ -49,7 +46,6 @@ static void lifo_tick(void* policy_data) {
 
 static bool lifo_needs_reschedule(void* policy_data, Process* running_process) {
     (void)policy_data;
-    // When the CPU is idle.
     return running_process == NULL;
 }
 
@@ -64,8 +60,6 @@ static void lifo_demote_process(void* policy_data, Process* process) {
     (void)process;
 }
 
-// --- VTable Definition ---
-
 static const PolicyVTable lifo_vtable = {
     .name = "lifo",
     .create = lifo_create,
@@ -77,8 +71,6 @@ static const PolicyVTable lifo_vtable = {
     .get_quantum = lifo_get_quantum,
     .demote_process = lifo_demote_process
 };
-
-// --- Public VTable Accessor ---
 
 const PolicyVTable* lifo_get_vtable() {
     return &lifo_vtable;

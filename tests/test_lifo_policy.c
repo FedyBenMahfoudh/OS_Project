@@ -3,19 +3,18 @@
 #include <string.h>
 #include "../headers/policies/lifo.h"
 #include "../headers/data_structures/process.h"
-#include "../headers/parser/config_parser.h" // New include
+#include "../headers/parser/config_parser.h"
 
 int main() {
     printf("--- Testing LIFO Policy with config file ---\n");
 
-    // 1. Create Policy
-    Policy* policy = lifo_policy_create(0); // Quantum is ignored for LIFO
+    
+    Policy* policy = lifo_policy_create(0); 
     if (!policy) {
         fprintf(stderr, "TEST FAILED: lifo_policy_create returned NULL.\n");
         return 1;
     }
 
-    // 2. Parse processes from config file
     const char* config_filepath = "configs/test1.conf";
     int process_count = 0;
     Process* processes = parse_config_file(config_filepath, &process_count);
@@ -32,20 +31,17 @@ int main() {
         return 1;
     }
 
-    // 3. Add parsed processes to the policy
     printf("Adding %d processes to LIFO policy from '%s':\n", process_count, config_filepath);
     for (int i = 0; i < process_count; i++) {
         printf("  Adding process: %s\n", processes[i].name);
         lifo_policy_add_process(policy, &processes[i]);
     }
 
-    // 4. Retrieve processes and check order
     printf("Retrieving processes...\n");
     Process* next;
     int pass = 1;
 
-    // Define expected order based on config1.conf processes added (P1-P6)
-    // but retrieved in reverse order (LIFO)
+    
     char* expected_order[] = {"P6", "P5", "P4", "P3", "P2", "P1"};
     int expected_count = sizeof(expected_order) / sizeof(expected_order[0]);
 
@@ -64,7 +60,7 @@ int main() {
         }
     }
     
-    // 5. Check if stack is empty
+    
     next = lifo_policy_get_next_process(policy);
     if (next != NULL) {
         pass = 0;
@@ -73,8 +69,7 @@ int main() {
         printf("Stack is empty as expected.\n");
     }
 
-    // 6. Clean up
-    free(processes); // Free memory allocated by parser
+    free(processes); 
     lifo_policy_destroy(policy);
 
     if (pass) {

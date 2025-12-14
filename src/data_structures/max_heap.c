@@ -12,7 +12,6 @@ struct MaxHeap {
     Comparator comp;
 };
 
-// Helper function to resize the heap
 static void max_heap_resize(MaxHeap* h) {
     int new_capacity = h->capacity * 2;
     Process** new_data = realloc(h->data, new_capacity * sizeof(Process*));
@@ -22,27 +21,23 @@ static void max_heap_resize(MaxHeap* h) {
     }
 }
 
-// Helper function to swap two processes
 static void swap(Process** a, Process** b) {
     Process* temp = *a;
     *a = *b;
     *b = temp;
 }
 
-// Helper function to maintain heap property going up
 static void max_heapify_up(MaxHeap* h, int index) {
     if (index == 0) return;
 
     int parent_index = (index - 1) / 2;
-    
-    // Use comparator: if child > parent, swap
+
     if (h->comp(h->data[index], h->data[parent_index]) > 0) {
         swap(&h->data[index], &h->data[parent_index]);
         max_heapify_up(h, parent_index);
     }
 }
 
-// Helper function to maintain heap property going down
 static void max_heapify_down(MaxHeap* h, int index) {
     int largest = index;
     int left_child = 2 * index + 1;
@@ -62,7 +57,6 @@ static void max_heapify_down(MaxHeap* h, int index) {
     }
 }
 
-// Creating a max heap : Returns a pointer to an empty max heap
 MaxHeap* max_heap_create(Comparator comp) {
     MaxHeap* h = (MaxHeap*) malloc(sizeof(MaxHeap));
     if (!h) return NULL;
@@ -80,7 +74,6 @@ MaxHeap* max_heap_create(Comparator comp) {
     return h;
 }
 
-// Adding a process to the max heap
 void max_heap_push(MaxHeap* h, Process* p) {
     if (h->size == h->capacity) {
         max_heap_resize(h);
@@ -91,13 +84,11 @@ void max_heap_push(MaxHeap* h, Process* p) {
     h->size++;
 }
 
-// Pulling a process from the max heap (By removing it)
 Process* max_heap_pop(MaxHeap* h) {
     if (h->size == 0) return NULL;
 
     Process* root = h->data[0];
-    
-    // Move last element to root
+
     h->data[0] = h->data[h->size - 1];
     h->size--;
 
@@ -108,18 +99,15 @@ Process* max_heap_pop(MaxHeap* h) {
     return root;
 }
 
-// Peeking at the process that is at the top of the max heap (Without removing it)
 Process* max_heap_peek(const MaxHeap* h) {
     if (h->size == 0) return NULL;
     return h->data[0];
 }
 
-// Verifying if a max heap is empty
 bool max_heap_is_empty(const MaxHeap* h) {
     return (h->size == 0);
 }
 
-// Freeing all the memory used by the max heap;
 void max_heap_destroy(MaxHeap* h) {
     if (h) {
         if (h->data) {

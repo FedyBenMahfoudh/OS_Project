@@ -2,22 +2,17 @@
 #include "../../headers/data_structures/min_heap.h"
 #include <stdlib.h>
 
-// --- Internal SJF Policy Data Structure ---
 typedef struct {
     MinHeap* heap;
 } SjfPolicyData;
 
-// --- Comparator for the MinHeap ---
 static int sjf_comparator(Process* a, Process* b) {
     Process* p1 = (Process*)a;
     Process* p2 = (Process*)b;
     return p1->burst_time - p2->burst_time;
 }
 
-// --- Static (Private) Policy Functions ---
-
 static void* sjf_create(int quantum) {
-    // Ignoring the quantum
     (void)quantum;  
     SjfPolicyData* policy_data = (SjfPolicyData*)malloc(sizeof(SjfPolicyData));
     if (!policy_data) return NULL;
@@ -71,8 +66,6 @@ static void sjf_demote_process(void* policy_data, Process* process) {
     (void)process;
 }
 
-// --- VTable Definition ---
-
 static const PolicyVTable sjf_vtable = {
     .name = "sjf",
     .create = sjf_create,
@@ -84,8 +77,6 @@ static const PolicyVTable sjf_vtable = {
     .get_quantum = sjf_get_quantum,
     .demote_process = sjf_demote_process
 };
-
-// --- Public VTable Accessor ---
 
 const PolicyVTable* sjf_get_vtable() {
     return &sjf_vtable;

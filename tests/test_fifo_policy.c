@@ -3,19 +3,17 @@
 #include <string.h>
 #include "../headers/policies/fifo.h"
 #include "../headers/data_structures/process.h"
-#include "../headers/parser/config_parser.h" // New include
+#include "../headers/parser/config_parser.h"
 
 int main() {
     printf("--- Testing FIFO Policy with config file ---\n");
 
-    // 1. Create Policy
-    Policy* policy = fifo_policy_create(0); // Quantum is ignored for FIFO
+    Policy* policy = fifo_policy_create(0); 
     if (!policy) {
         fprintf(stderr, "TEST FAILED: fifo_policy_create returned NULL.\n");
         return 1;
     }
 
-    // 2. Parse processes from config file
     const char* config_filepath = "configs/test1.conf";
     int process_count = 0;
     Process* processes = parse_config_file(config_filepath, &process_count);
@@ -32,19 +30,16 @@ int main() {
         return 1;
     }
 
-    // 3. Add parsed processes to the policy
     printf("Adding %d processes to FIFO policy from '%s':\n", process_count, config_filepath);
     for (int i = 0; i < process_count; i++) {
         printf("  Adding process: %s\n", processes[i].name);
         fifo_policy_add_process(policy, &processes[i]);
     }
 
-    // 4. Retrieve processes and check order
     printf("Retrieving processes...\n");
     Process* next;
     int pass = 1;
 
-    // Define expected order based on config1.conf
     char* expected_order[] = {"P1", "P2", "P3", "P4", "P5", "P6"};
     int expected_count = sizeof(expected_order) / sizeof(expected_order[0]);
 
@@ -63,7 +58,6 @@ int main() {
         }
     }
     
-    // 5. Check if queue is empty
     next = fifo_policy_get_next_process(policy);
     if (next != NULL) {
         pass = 0;
@@ -72,8 +66,7 @@ int main() {
         printf("Queue is empty as expected.\n");
     }
 
-    // 6. Clean up
-    free(processes); // Free memory allocated by parser
+    free(processes); 
     fifo_policy_destroy(policy);
 
     if (pass) {

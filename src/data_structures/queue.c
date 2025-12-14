@@ -15,8 +15,6 @@ struct Queue {
     int size;
 };
 
-
-// Creating a queue : Returns a pointer to an empty queue
 Queue* queue_create() {
     Queue* q = (Queue*) malloc(sizeof(Queue));
 
@@ -29,8 +27,6 @@ Queue* queue_create() {
     return q;
 }
 
-
-// Inserting a process at the end of the queue
 void queue_enqueue(Queue* q, Process* p) {
     QueueNode* node = (QueueNode*) malloc(sizeof(QueueNode));
     if (!node) return;
@@ -51,8 +47,6 @@ void queue_enqueue(Queue* q, Process* p) {
     return;
 }
 
-
-// Pulling a process from the start of the queue (By removing it)
 Process* queue_dequeue(Queue* q) {
     if (!q->start) return NULL;
 
@@ -70,25 +64,17 @@ Process* queue_dequeue(Queue* q) {
     return p;
 }
 
-
-// Peeking at the process that is at the top of the queue (Without removing it)
 Process* queue_peek(const Queue* q) {
     if (!q->start) return NULL;
     return q->start->process;
 }
 
-
-// Verifying if a queue is empty
 bool queue_is_empty(const Queue* q) {
     return (q->size == 0);
 }
-
-// Getting the number of elements in the queue
 int queue_size(const Queue* q) {
     return q ? q->size : 0;
 }
-
-// Freeing all the memory used by the queue;
 void queue_destroy(Queue* q) {
     while (!queue_is_empty(q)) {
         queue_dequeue(q);

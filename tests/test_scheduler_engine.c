@@ -2,53 +2,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <math.h> // For fabs
+#include <math.h> 
 
 #include "../headers/engine/scheduler_engine.h"
 
-// Define a small tolerance for float comparisons
+
 #define EPSILON 0.001f
 
 void test_fifo_scheduler() {
     printf("--- Running Scheduler Engine Test (FIFO with test1.conf) ---\n");
 
-    // 1. Prepare simulation parameters
     SimParameters params = {
         .config_filepath = "configs/test1.conf",
         .policy_name = "fifo",
-        .quantum = 0 // Not used for FIFO
+        .quantum = 0 
     };
 
-    // 2. Run the simulation
     SimulationResult* results = run_simulation(&params);
 
-    // 3. Assert primary conditions
     assert(results != NULL);
     printf("  ✅ SimulationResult is not NULL.\n");
-    assert(results->process_count == 6); // test1.conf has 6 processes
+    assert(results->process_count == 6); 
     printf("  ✅ Correct number of processes in results (6).\n");
-
-    // 4. Assert calculated metrics
+ 
     printf("Asserting calculated metrics...\n");
 
-    // Average Turnaround Time
     assert(fabs(results->average_turnaround_time - 12.0f) < EPSILON);
     printf("  ✅ Average Turnaround Time: %.2f (Expected: 12.00)\n", results->average_turnaround_time);
 
-    // Average Waiting Time
-    assert(fabs(results->average_waiting_time - 7.833333f) < EPSILON); // 47 / 6
+    assert(fabs(results->average_waiting_time - 7.833333f) < EPSILON); 
     printf("  ✅ Average Waiting Time: %.2f (Expected: 7.83)\n", results->average_waiting_time);
 
-    // CPU Utilization
     assert(fabs(results->cpu_utilization - 100.0f) < EPSILON);
     printf("  ✅ CPU Utilization: %.2f%% (Expected: 100.00%%)\n", results->cpu_utilization);
 
-    // 5. Assert Gantt Chart (basic check: not empty)
     assert(results->gantt_chart != NULL);
     assert(results->gantt_event_count > 0);
     printf("  ✅ Gantt chart data is present.\n");
-    
-    // 6. Cleanup
+
     free_simulation_results(results);
     printf("  ✅ SimulationResult memory freed.\n");
 

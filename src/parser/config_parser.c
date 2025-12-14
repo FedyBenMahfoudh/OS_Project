@@ -8,23 +8,14 @@
 #include "../../headers/data_structures/process.h"
 
 
-// Defining an initial capacity for the processes array
 #define INITIAL_CAPACITY 16
 
-
-// Defining the different states the parser can be at
 typedef enum {
     IDLE,
     IN_PROCESS,
     IN_COMMENT_BLOCK
 } ParserState;
 
-
-// A function to trim the whitespaces from a line 
-// Params:
-// @str: a string (will represent a line from the config file)
-// Return:
-// A pointer to the first character in the trimmed string
 char* trim_whitespaces_from_string(char* str) {
     char* end;
 
@@ -38,7 +29,6 @@ char* trim_whitespaces_from_string(char* str) {
 
     return str;
 }
-
 
 Process* parse_config_file(const char* filepath, int* process_count) {
     FILE* file = fopen(filepath, "r");
@@ -63,22 +53,18 @@ Process* parse_config_file(const char* filepath, int* process_count) {
 
     while(fgets(line, sizeof(line), file)) {
         line_number++;
-        // UNUSED : char* original_line_ptr = line;
         char* trimmed_line = trim_whitespaces_from_string(line);        
-        
-        // Case : Single-line comment (Starting with #) 
+
         char* comment_position = strchr(trimmed_line, '#');
         if (comment_position != NULL) {
             *comment_position = '\0';
             trimmed_line = trim_whitespaces_from_string(trimmed_line);
         }
-        
-        // Case : Empty line
+
         if (strlen(trimmed_line) == 0) {
             continue;
         }
 
-        // Case : Multi-line comment (Starting and ending with """)
         if (strncmp(trimmed_line, "\"\"\"", 3) == 0) {
             if (state == IDLE) state = IN_COMMENT_BLOCK;
             else if (state == IN_COMMENT_BLOCK) state = IDLE;
@@ -86,16 +72,11 @@ Process* parse_config_file(const char* filepath, int* process_count) {
         }
 
         switch(state) {
-            // Find : "process <name> {"
             case IDLE: {
-                // Matching the first line pattern to extract the process name
                 char process_name[32];
                 if (sscanf(trimmed_line, "process %31s {", process_name) == 1) {
-                    // Used to use it to show the process name but an another function now handles this output
-                    // printf("Found new process: %s\n", process_name);
                 }
 
-                // Checking if the array is running out of places for new processes
                 if (*process_count >= capacity) {
                     capacity *= 2;
                     Process* new_processes = realloc(processes, sizeof(Process) * capacity);
@@ -106,23 +87,18 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                         return NULL;
                     }
 
-                    // Making the newly-reallocated array the main processes array
                     processes = new_processes;
                 }
                 
-                // Initializing the current process name
                 current_process = &processes[*process_count];
                 strncpy(current_process->name, process_name, sizeof(current_process->name) - 1);
-                // Ensure null-termination at the end of the buffer for safety
                 current_process->name[sizeof(current_process->name) - 1] = '\0';
 
-                // Initializing the other fields of the current process
-                current_process->arrival_time = -1; // REQUIRED field
-                current_process->burst_time = -1; // REQUIRED field
-                current_process->priority = 0; // OPTIONAL field
-                current_process->original_index = *process_count; // Set original index
+                current_process->arrival_time = -1; //
+                current_process->burst_time = -1; 
+                current_process->priority = 0; 
+                current_process->original_index = *process_count; 
 
-                // Initializing the runtime metrics to 0
                 current_process->start_time = 0;
                 current_process->finish_time = 0;
                 current_process->waiting_time = 0;
@@ -132,23 +108,18 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                 current_process->executed_time = 0;
                 current_process->last_executed_time = 0;
                 current_process->is_preempted = false;
-                current_process->current_quantum_runtime = 0; // Initialize the new field
+                current_process->current_quantum_runtime = 0;
                 
-                // MLFQ Initialization
                 current_process->last_active_time = 0;
                 current_process->current_queue_level = 0;
                 current_process->time_spent_at_current_level = 0;
 
-                // Changing the state of the process
                 state = IN_PROCESS;
             }
                 break;
-            
-            // Parse : "key = value" OR Find : }
+
             case IN_PROCESS: {
-                // Case : End of process : "}"
                 if (strcmp(trimmed_line, "}") == 0) {
-                    // Stating an error if any of the fields wasn't given a valid value
                     if ((current_process->arrival_time < 0) || (current_process->burst_time <= 0)) {
                         fprintf(stderr, "Error parsing process %s: missing or invalid 'arrival_time' or 'burst_time'.\n", current_process->name);
                         free(processes);
@@ -162,11 +133,9 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                     break;
                 }
 
-                // Case : Parsing a key-value pair "key = value"
                 char* key = trimmed_line;
                 char* value_str = strchr(trimmed_line, '=');
 
-                // Stating an error if there is no equal sign (=)
                 if (value_str == NULL) {
                     fprintf(stderr, "Error line %d: Invalid syntax in process block: '%s'. Expected 'key = value'.\n", line_number, trimmed_line);
                     free(processes);
@@ -174,15 +143,13 @@ Process* parse_config_file(const char* filepath, int* process_count) {
                     return NULL;
                 }
 
-                *value_str = '\0'; // Splitting the line at the equal sign
-                value_str++; // Moving after the sign
+                *value_str = '\0'; 
+                value_str++; 
 
-                // Trimming the pair and converting the value to an integer 
                 key = trim_whitespaces_from_string(key);
                 value_str = trim_whitespaces_from_string(value_str);
                 int value = atoi(value_str);
 
-                // Checking the key refers to which field of the process
                 if (strcmp(key, "arrival_time") == 0) {
                     current_process->arrival_time = value;
                     if (value < 0) {
@@ -217,14 +184,11 @@ Process* parse_config_file(const char* filepath, int* process_count) {
 
             }
             break;
-
-            // Ignore the current line
             case IN_COMMENT_BLOCK:
                 continue;
         }
     }
 
-    // Final validation
     if (state == IN_PROCESS) {
         fprintf(stderr, "Error: Unexpected end of file while parsing process '%s'.\n", current_process->name);
         free(processes);

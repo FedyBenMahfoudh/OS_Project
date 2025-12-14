@@ -1,27 +1,18 @@
-# Documentation and planning files
 plan/
 
-# Build artifacts from Makefile
 /build/
 /scheduler
 /tui_scheduler
 /gui_scheduler
 
-# Test results or other generated output
 /results/
 
-# Common editor and IDE folders
 /.vscode/
 /.idea/
 
-# Common temporary and backup files
 *.swp
 *~
 *.out
 
-# OS-generated files
 .DS_Store
 Thumbs.db
-
-# Reference Images 
-# *.png

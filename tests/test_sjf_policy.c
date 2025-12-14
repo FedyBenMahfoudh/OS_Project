@@ -8,14 +8,12 @@
 int main() {
     printf("--- Testing SJF Policy with config file ---\n");
 
-    // 1. Create Policy
-    Policy* policy = sjf_policy_create(0); // Quantum is ignored for SJF
+    Policy* policy = sjf_policy_create(0); 
     if (!policy) {
         fprintf(stderr, "TEST FAILED: sjf_policy_create returned NULL.\n");
         return 1;
     }
 
-    // 2. Parse processes from config file
     const char* config_filepath = "configs/test1.conf";
     int process_count = 0;
     Process* processes = parse_config_file(config_filepath, &process_count);
@@ -32,21 +30,16 @@ int main() {
         return 1;
     }
 
-    // 3. Add parsed processes to the policy
     printf("Adding %d processes to SJF policy from '%s':\n", process_count, config_filepath);
     for (int i = 0; i < process_count; i++) {
         printf("  Adding process: %s (Burst: %d)\n", processes[i].name, processes[i].burst_time);
         sjf_policy_add_process(policy, &processes[i]);
     }
 
-    // 4. Retrieve processes and check order
     printf("Retrieving processes...\n");
     Process* next;
     int pass = 1;
 
-    // Define expected order based on config1.conf and SJF rules (Shorter burst time = Higher Priority)
-    // P1(5), P2(8), P3(2), P4(3), P5(4), P6(3)
-    // Expected: P3 (2), P4 (3), P6 (3), P5 (4), P1 (5), P2 (8)
     char* expected_order[] = {"P3", "P4", "P6", "P5", "P1", "P2"};
     int expected_count = sizeof(expected_order) / sizeof(expected_order[0]);
 
@@ -65,7 +58,6 @@ int main() {
         }
     }
     
-    // 5. Check if heap is empty
     next = sjf_policy_get_next_process(policy);
     if (next != NULL) {
         pass = 0;
@@ -74,8 +66,7 @@ int main() {
         printf("Heap is empty as expected.\n");
     }
 
-    // 6. Clean up
-    free(processes); // Free memory allocated by parser
+    free(processes); 
     sjf_policy_destroy(policy);
 
     if (pass) {
