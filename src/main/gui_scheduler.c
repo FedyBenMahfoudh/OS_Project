@@ -10,93 +10,57 @@
 #include "../../headers/parser/config_parser.h"
 #include "../../headers/policies/policies.h"
 
-/** @brief Main application window. */
+
 GtkWidget *window;
-/** @brief Label for displaying the current policy. */
 GtkWidget *title_label;
-/** @brief Label for displaying the current simulation time. */
 GtkWidget *time_label;
-/** @brief TreeView to display individual process information. */
 GtkWidget *process_tree_view;
-/** @brief Paned widget to hold status cards (running process, ready queue). */
 GtkWidget *status_view;
-/** @brief Drawing area for rendering the Gantt chart. */
 GtkWidget *gantt_drawing_area;
-/** @brief TreeView to display process performance metrics. */
 GtkWidget *performance_tree_view;
-/** @brief Box widget to hold overall simulation metrics. */
 GtkWidget *metrics_view;
-/** @brief Combo box for selecting the scheduling policy. */
 GtkWidget *policy_combo;
-/** @brief Entry field for specifying the time quantum. */
 GtkWidget *quantum_entry;
-/** @brief Button to start the simulation. */
 GtkWidget *start_button;
-/** @brief Button to pause/resume the simulation. */
 GtkWidget *pause_button;
-/** @brief Button to restart the simulation. */
 GtkWidget *restart_button;
-/** @brief Scale widget for adjusting simulation speed. */
 GtkWidget *speed_scale;
-/** @brief Label for displaying the current simulation speed. */
 GtkWidget *control_label;
 
-/**
- * @brief Represents the current state of the GUI simulation.
- * This structure holds all dynamic data related to the simulation's progress
- * and visual representation.
- */
+
 typedef struct {
-    Process *current_processes; /**< Array of current processes being simulated. */
-    int process_count;          /**< Number of processes in the simulation. */
-    GanttEvent *gantt_events;   /**< Array of events for the Gantt chart. */
-    int gantt_event_count;      /**< Number of events in the Gantt chart. */
-    int current_time;           /**< Current simulation time. */
-    Process *running_process;   /**< Pointer to the process currently running on the CPU. */
-    bool is_running;            /**< Flag indicating if the simulation is actively running. */
-    bool is_paused;             /**< Flag indicating if the simulation is paused. */
-    int speed_ms;               /**< Delay in milliseconds between each simulation tick. */
-    char *selected_policy;      /**< Name of the currently selected scheduling policy. */
-    int quantum;                /**< Time quantum used by quantum-based policies. */
-    SimulationResult *results;  /**< Stores the final results of the simulation. */
+    Process *current_processes;  
+    int process_count;           
+    GanttEvent *gantt_events;    
+    int gantt_event_count;       
+    int current_time;           
+    Process *running_process;   
+    bool is_running;             
+    bool is_paused;              
+    int speed_ms;                
+    char *selected_policy;       
+    int quantum;                
+    SimulationResult *results;   
 } SimState;
 
-/** @brief Global simulation state instance. */
 SimState sim_state = {0};
-/** @brief Path to the configuration file. */
 char *config_filepath = NULL;
-/** @brief Array of processes parsed from the config file at the start. */
 Process *initial_processes = NULL;
-/** @brief Number of initial processes. */
 int initial_process_count = 0;
 
-/**
- * @brief Structure to represent an RGB color.
- */
 typedef struct { double r, g, b; } Color;
 
-/**
- * @brief Predefined array of colors for processes in the Gantt chart.
- */
+
 Color process_colors[] = {
     {0.2, 0.6, 0.9}, {0.9, 0.4, 0.4}, {0.4, 0.8, 0.4}, {0.9, 0.7, 0.3},
     {0.7, 0.4, 0.9}, {0.3, 0.9, 0.9}, {0.9, 0.5, 0.7}, {0.6, 0.6, 0.3},
 };
 
-/**
- * @brief Retrieves a color for a process based on its index.
- * @param index The index of the process.
- * @return A Color struct.
- */
+
 Color get_process_color(int index) {
     return process_colors[index % 8];
 }
 
-/**
- * @brief Sets up the GtkTreeView for displaying process information.
- * Configures columns for process name, arrival time, burst time, priority,
- * remaining burst time, and executed time.
- */
 void setup_process_tree_view() {
     GtkListStore *store = gtk_list_store_new(6,
         G_TYPE_STRING,
@@ -123,11 +87,6 @@ void setup_process_tree_view() {
     }
 }
 
-/**
- * @brief Sets up the GtkTreeView for displaying process performance metrics.
- * Configures columns for process name, start time, finish time, waiting time,
- * turnaround time, and response time.
- */
 void setup_performance_tree_view() {
     GtkListStore *store = gtk_list_store_new(6,
         G_TYPE_STRING,
@@ -154,12 +113,7 @@ void setup_performance_tree_view() {
     }
 }
 
-/**
- * @brief Updates the process information in the GtkTreeView.
- * Iterates through all current processes and populates the tree view with
- * their name, arrival time, burst time, priority, remaining burst time,
- * and executed time.
- */
+
 void update_process_info() {
     GtkListStore *store = GTK_LIST_STORE(
         gtk_tree_view_get_model(GTK_TREE_VIEW(process_tree_view)));
@@ -182,11 +136,7 @@ void update_process_info() {
     }
 }
 
-/**
- * @brief Updates the process performance metrics in the GtkTreeView.
- * Populates the tree view with each process's start time, finish time,
- * waiting time, turnaround time, and response time.
- */
+
 void update_performance() {
     GtkListStore *store = GTK_LIST_STORE(
         gtk_tree_view_get_model(GTK_TREE_VIEW(performance_tree_view)));
@@ -215,13 +165,8 @@ GtkWidget *running_time_label;
 GtkWidget *queue_card_box;
 GtkWidget *queue_header_label;
 
-/**
- * @brief Updates the status display, showing the running process and the ready queue.
- * This function dynamically updates the UI to reflect the current state of processes:
- * which one is running, its progress, and which processes are waiting in the ready queue.
- */
+
 void update_status() {
-    // Clearing existing queue items
     GList *children = gtk_container_get_children(GTK_CONTAINER(queue_card_box));
     int count = 0;
     for (GList *iter = children; iter != NULL; iter = g_list_next(iter)) {
@@ -232,15 +177,13 @@ void update_status() {
     }
     g_list_free(children);
     
-    // Updating running process card
     if (sim_state.running_process) {
         char name_markup[128];
         snprintf(name_markup, sizeof(name_markup),
                  "<span size='13000' weight='bold' foreground='#27ae60'>%s</span>",
                  sim_state.running_process->name);
         gtk_label_set_markup(GTK_LABEL(running_name_label), name_markup);
-        
-        // Updating progress bar
+
         double fraction = sim_state.running_process->burst_time > 0 ?
                          (double)(sim_state.running_process->burst_time - sim_state.running_process->remaining_burst_time) /
                          sim_state.running_process->burst_time : 0.0;
@@ -258,7 +201,6 @@ void update_status() {
         gtk_widget_hide(running_card_box);
     }
     
-    // Counting ready processes
     int ready_count = 0;
     for (int i = 0; i < sim_state.process_count; i++) {
         if (sim_state.current_processes[i].state == READY) {
@@ -266,14 +208,12 @@ void update_status() {
         }
     }
     
-    // Updating queue header
     char queue_hdr[64];
     snprintf(queue_hdr, sizeof(queue_hdr),
              "<span foreground='#3498db' weight='bold'>⏳ Ready Queue (%d waiting)</span>",
              ready_count);
     gtk_label_set_markup(GTK_LABEL(queue_header_label), queue_hdr);
     
-    // Adding mini cards for ready processes
     if (ready_count > 0) {
         for (int i = 0; i < sim_state.process_count; i++) {
             if (sim_state.current_processes[i].state == READY) {
@@ -293,7 +233,6 @@ void update_status() {
             }
         }
     } else {
-        // Displaying message for empty queue
         GtkWidget *empty_label = gtk_label_new(NULL);
         gtk_label_set_markup(GTK_LABEL(empty_label),
                             "<span foreground='#95a5a6' style='italic'>No processes waiting</span>");
@@ -308,16 +247,10 @@ GtkWidget *tat_value_label;
 GtkWidget *cpu_value_label;
 GtkWidget *status_label_widget;
 
-/**
- * @brief Updates the overall performance metrics displayed in the GUI.
- * Calculates and presents average waiting time, average turnaround time,
- * and CPU utilization based on the current simulation state.
- */
 void update_overall_metrics() {
     float avg_wait = 0, avg_tat = 0, cpu_util = 0;
     int completed = 0;
     
-    // Calculating total wait and turnaround times for completed processes
     for (int i = 0; i < sim_state.process_count; i++) {
         if (sim_state.current_processes[i].state == TERMINATED) {
             avg_wait += sim_state.current_processes[i].waiting_time;
@@ -326,33 +259,27 @@ void update_overall_metrics() {
         }
     }
     
-    // Calculating averages if processes completed
     if (completed > 0) {
         avg_wait /= completed;
         avg_tat /= completed;
     }
     
-    // Calculating CPU utilization
     if (sim_state.current_time > 0) {
         cpu_util = (sim_state.running_process != NULL) ? 100.0 : 0.0;
     }
     
-    // Updating wait time display
     char wait_text[128];
     snprintf(wait_text, sizeof(wait_text), "<span size='large' weight='bold' foreground='#2980b9'>%.2f</span>", avg_wait);
     gtk_label_set_markup(GTK_LABEL(wait_value_label), wait_text);
     
-    // Updating TAT display
     char tat_text[128];
     snprintf(tat_text, sizeof(tat_text), "<span size='large' weight='bold' foreground='#2980b9'>%.2f</span>", avg_tat);
     gtk_label_set_markup(GTK_LABEL(tat_value_label), tat_text);
     
-    // Updating CPU utilization display
     char cpu_text[128];
     snprintf(cpu_text, sizeof(cpu_text), "<span size='large' weight='bold' foreground='#2980b9'>%.2f%%</span>", cpu_util);
     gtk_label_set_markup(GTK_LABEL(cpu_value_label), cpu_text);
     
-    // Updating simulation status display
     if (completed > 0) {
         char status_text[64];
         snprintf(status_text, sizeof(status_text), 
@@ -365,18 +292,7 @@ void update_overall_metrics() {
 }
 
 
-
-/**
- * @brief Draws the Gantt chart representing process execution over time.
- * This function is a GTK+ drawing callback that renders the timeline of processes
- * and their CPU usage, including idle periods.
- * @param widget The GtkWidget that triggered the draw event.
- * @param cr The Cairo context for drawing.
- * @param data User data (not used in this case).
- * @return Always FALSE to indicate that the event has not been fully handled.
- */
 gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
-    // Handling initial state or no events
     if (!sim_state.gantt_events || sim_state.gantt_event_count == 0) {
         cairo_set_source_rgb(cr, 0.95, 0.95, 0.95);
         cairo_paint(cr);
@@ -391,27 +307,23 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
     
     int width = gtk_widget_get_allocated_width(widget);
     
-    // Clearing background
     cairo_set_source_rgb(cr, 0.98, 0.98, 0.98);
     cairo_paint(cr);
     
     int max_time = sim_state.current_time + 1;
     if (max_time == 0) return FALSE;
     
-    // Defining dimensions for drawing
     int left_margin = 80;
     int top_margin = 40;
     int time_width = 35;
     int row_height = 30;
     
-    // Drawing chart title
     cairo_set_source_rgb(cr, 0.2, 0.2, 0.2);
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 14);
     cairo_move_to(cr, 10, 20);
     cairo_show_text(cr, "Gantt Chart - Process Execution Timeline");
     
-    // Drawing time header
     cairo_set_font_size(cr, 10);
     cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
     for (int t = 0; t <= max_time; t++) {
@@ -422,7 +334,6 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_show_text(cr, time_str);
     }
     
-    // Drawing grid lines
     cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.3);
     cairo_set_line_width(cr, 1);
     for (int t = 0; t <= max_time; t++) {
@@ -432,12 +343,9 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_stroke(cr);
     }
     
-    // Drawing each process row
-    // Creating a temporary array of pointers to sort by original_index
     Process** sorted_procs = malloc(sizeof(Process*) * sim_state.process_count);
     for (int i=0; i<sim_state.process_count; i++) sorted_procs[i] = &sim_state.current_processes[i];
     
-    // Performing simple bubble sort by original_index
     for (int i=0; i<sim_state.process_count-1; i++) {
         for (int j=0; j<sim_state.process_count-i-1; j++) {
             if (sorted_procs[j]->original_index > sorted_procs[j+1]->original_index) {
@@ -452,8 +360,7 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
         int y = top_margin + p * row_height;
         Process* current_p = sorted_procs[p];
         
-        // Drawing process name with background
-        Color proc_color = get_process_color(current_p->original_index); // Using index for consistent color
+        Color proc_color = get_process_color(current_p->original_index);
         cairo_rectangle(cr, 5, y + 4, 70, row_height - 8);
         cairo_set_source_rgba(cr, proc_color.r, proc_color.g, proc_color.b, 0.2);
         cairo_fill(cr);
@@ -464,7 +371,6 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_move_to(cr, 10, y + 18);
         cairo_show_text(cr, current_p->name);
         
-        // Drawing execution timeline
         for (int t = 0; t <= max_time; t++) {
             bool was_running = false;
             
@@ -485,7 +391,6 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
             int x = left_margin + t * time_width;
             
             if (was_running) {
-                // Drawing filled block with gradient effect
                 cairo_rectangle(cr, x + 3, y + 5, time_width - 6, row_height - 10);
                 cairo_set_source_rgb(cr, proc_color.r, proc_color.g, proc_color.b);
                 cairo_fill_preserve(cr);
@@ -500,12 +405,6 @@ gboolean draw_gantt_chart(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-
-/**
- * @brief Orchestrates the update of all relevant GUI displays.
- * This function calls individual update functions for process information,
- * status, performance metrics, and queues, then triggers a redraw of the Gantt chart.
- */
 void update_displays() {
     char title[128];
     snprintf(title, sizeof(title), "Policy: %s", sim_state.selected_policy);
@@ -521,7 +420,6 @@ void update_displays() {
     update_overall_metrics();
     update_overall_metrics();
     
-    // Dynamically resizing for Gantt chart scrolling
     int required_width = 80 + (sim_state.current_time + 5) * 35;
     if (required_width < 1200) required_width = 1200;
     gtk_widget_set_size_request(gantt_drawing_area, required_width, 400);
@@ -529,20 +427,6 @@ void update_displays() {
     gtk_widget_queue_draw(gantt_drawing_area);
 }
 
-
-/**
- * @brief Callback function executed at each simulation tick for GUI updates.
- * This function is registered with the scheduler engine to receive real-time
- * updates about the simulation progress and update the GUI accordingly.
- * It also handles GUI event processing and simulation speed control.
- *
- * @param time Current simulation time.
- * @param procs Array of all processes.
- * @param count Number of processes.
- * @param running Pointer to the currently running process.
- * @param events Array of Gantt chart events.
- * @param event_count Number of Gantt chart events.
- */
 void gui_tick_callback(int time, Process* procs, int count, Process* running,
                        GanttEvent* events, int event_count) {
     sim_state.current_time = time;
@@ -560,7 +444,6 @@ void gui_tick_callback(int time, Process* procs, int count, Process* running,
     
     g_usleep(sim_state.speed_ms * 1000);
     
-    // Handling pause state
     while (sim_state.is_paused && sim_state.is_running) {
         while (gtk_events_pending()) {
             gtk_main_iteration();
@@ -569,29 +452,20 @@ void gui_tick_callback(int time, Process* procs, int count, Process* running,
     }
 }
 
-
-/**
- * @brief Initiates a new simulation run.
- * Resets the simulation state, configures parameters, and calls the scheduler
- * engine to start the simulation, receiving real-time updates via `gui_tick_callback`.
- */
 void start_simulation() {
     if (sim_state.is_running) return;
     
-    // Freeing previous results if any
     if (sim_state.results) {
         free_simulation_results(sim_state.results);
         sim_state.results = NULL;
     }
     
-    // Initializing simulation state
     sim_state.is_running = true;
     sim_state.is_paused = false;
     gtk_widget_set_sensitive(start_button, FALSE);
     gtk_widget_set_sensitive(pause_button, TRUE);
     gtk_widget_set_sensitive(restart_button, TRUE);
     
-    // Setting up simulation parameters
     SimParameters sim_params;
     sim_params.config_filepath = config_filepath;
     sim_params.policy_name = sim_state.selected_policy;
@@ -599,10 +473,8 @@ void start_simulation() {
     sim_params.verbose = FALSE;
     sim_params.tick_callback = gui_tick_callback;
     
-    // Running the simulation and storing results
     sim_state.results = run_simulation(&sim_params);
     
-    // Processing and displaying final results
     if (sim_state.results) {
         sim_state.current_time = 0;
         for (int i = 0; i < sim_state.results->process_count; i++) {
@@ -614,24 +486,15 @@ void start_simulation() {
         sim_state.process_count = sim_state.results->process_count;
         sim_state.gantt_events = sim_state.results->gantt_chart;
         sim_state.gantt_event_count = sim_state.results->gantt_event_count;
-        update_displays();  // Final update
+        update_displays(); 
     }
     
-    // Resetting simulation running state
     sim_state.is_running = false;
     gtk_widget_set_sensitive(start_button, TRUE);
     gtk_widget_set_sensitive(pause_button, FALSE);
 }
 
-
-/**
- * @brief Callback function for the "Start" button click event.
- * Validates selected policy and quantum, then initiates the simulation.
- * @param button The GtkButton widget that triggered the event.
- * @param data User data (not used in this case).
- */
 void on_start_clicked(GtkButton *button, gpointer data) {
-    // Getting fresh policy selection
     gchar *policy = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(policy_combo));
     if (!policy) {
         GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window),
@@ -642,16 +505,14 @@ void on_start_clicked(GtkButton *button, gpointer data) {
         return;
     }
     
-    // Freeing old policy and updating with new selection
     if (sim_state.selected_policy) {
         g_free(sim_state.selected_policy);
     }
-    sim_state.selected_policy = policy;  // Taking ownership of the string
+    sim_state.selected_policy = policy;  
     
     const char *quantum_text = gtk_entry_get_text(GTK_ENTRY(quantum_entry));
     sim_state.quantum = atoi(quantum_text);
-    
-    // Validating quantum for RR and MLFQ policies
+
     if ((strcmp(sim_state.selected_policy, "rr") == 0 || strcmp(sim_state.selected_policy, "RR") == 0 ||
          strcmp(sim_state.selected_policy, "mlfq") == 0 || strcmp(sim_state.selected_policy, "MLFQ") == 0) &&
         sim_state.quantum <= 0) {
@@ -666,30 +527,15 @@ void on_start_clicked(GtkButton *button, gpointer data) {
     start_simulation();
 }
 
-/**
- * @brief Callback function for the "Pause/Resume" button click event.
- * Toggles the `is_paused` state of the simulation and updates the button label.
- * @param button The GtkButton widget that triggered the event.
- * @param data User data (not used in this case).
- */
 void on_pause_clicked(GtkButton *button, gpointer data) {
     sim_state.is_paused = !sim_state.is_paused;
     gtk_button_set_label(button, sim_state.is_paused ? "▶ Resume" : "⏸ Pause");
 }
 
-/**
- * @brief Callback function for the "Restart" button click event.
- * Forces the current simulation to stop and then starts a new one with
- * the currently selected policy and quantum.
- * @param button The GtkButton widget that triggered the event.
- * @param data User data (not used in this case).
- */
 void on_restart_clicked(GtkButton *button, gpointer data) {
-    // Forcing current simulation to stop
     sim_state.is_running = false;
     g_usleep(100000);
     
-    // Getting fresh policy selection
     gchar *policy = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(policy_combo));
     if (policy) {
         if (sim_state.selected_policy) {
@@ -704,12 +550,6 @@ void on_restart_clicked(GtkButton *button, gpointer data) {
     start_simulation();
 }
 
-/**
- * @brief Callback function for when the simulation speed slider value changes.
- * Updates the simulation speed (`speed_ms`) and its corresponding display label.
- * @param range The GtkRange widget (speed_scale) that triggered the event.
- * @param data User data (not used in this case).
- */
 void on_speed_changed(GtkRange *range, gpointer data) {
     sim_state.speed_ms = (int)gtk_range_get_value(range);
     char label[64];
@@ -718,17 +558,9 @@ void on_speed_changed(GtkRange *range, gpointer data) {
 }
 
 
-/**
- * @brief Callback function for when the scheduling policy selection changes.
- * Enables or disables the quantum entry field based on whether the selected
- * policy is quantum-based (e.g., Round Robin, MLFQ).
- * @param combo The GtkComboBox widget (policy_combo) that triggered the event.
- * @param data User data (not used in this case).
- */
 void on_policy_changed(GtkComboBox *combo, gpointer data) {
     gchar *policy = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
     if (policy) {
-        // Enabling quantum for Round Robin and MLFQ
         gboolean uses_quantum = (strcmp(policy, "rr") == 0 || strcmp(policy, "RR") == 0 ||
                                  strcmp(policy, "mlfq") == 0 || strcmp(policy, "MLFQ") == 0);
         gtk_widget_set_sensitive(quantum_entry, uses_quantum);
@@ -748,7 +580,6 @@ void create_window() {
     gtk_container_set_border_width(GTK_CONTAINER(main_vbox), 15);
     gtk_container_add(GTK_CONTAINER(window), main_vbox);
     
-    // Title (centered)
     GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_box_pack_start(GTK_BOX(main_vbox), title_box, FALSE, FALSE, 0);
     
@@ -771,7 +602,6 @@ void create_window() {
     
     gtk_box_pack_start(GTK_BOX(main_vbox), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 5);
     
-    // Top row: Process Info | Status
     GtkWidget *top_paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(main_vbox), top_paned, FALSE, FALSE, 0);
     
@@ -803,11 +633,9 @@ void create_window() {
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(status_frame), status_scroll);
     
-    // Horizontal paned for side-by-side layout
     status_view = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_container_add(GTK_CONTAINER(status_scroll), status_view);
     
-    // LEFT: Running process card
     GtkWidget *left_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(left_box), 5);
     
@@ -829,11 +657,9 @@ void create_window() {
     gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(running_progress_bar), TRUE);
     gtk_box_pack_start(GTK_BOX(running_card_box), running_progress_bar, FALSE, FALSE, 0);
     
-    // Expand to fill vertical space
     gtk_box_pack_start(GTK_BOX(left_box), running_frame, TRUE, TRUE, 0);
     gtk_paned_add1(GTK_PANED(status_view), left_box);
     
-    // RIGHT: Ready queue card
     GtkWidget *right_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(right_box), 5);
     
@@ -861,7 +687,6 @@ void create_window() {
     
     gtk_paned_set_position(GTK_PANED(top_paned), 650);
     
-    // Gantt chart
     GtkWidget *gantt_frame = gtk_frame_new(NULL);
     GtkWidget *gantt_label = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(gantt_label), "<b>Gantt Chart</b>");
@@ -879,7 +704,6 @@ void create_window() {
     g_signal_connect(gantt_drawing_area, "draw", G_CALLBACK(draw_gantt_chart), NULL);
     gtk_container_add(GTK_CONTAINER(gantt_scroll), gantt_drawing_area);
     
-    // Bottom row: Performance | Metrics
     GtkWidget *bottom_paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(main_vbox), bottom_paned, FALSE, FALSE, 0);
     
@@ -911,18 +735,15 @@ void create_window() {
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(metrics_frame), metrics_scroll);
     
-    // Main metrics container
     metrics_view = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_set_border_width(GTK_CONTAINER(metrics_view), 10);
     gtk_container_add(GTK_CONTAINER(metrics_scroll), metrics_view);
     
-    // Title
     GtkWidget *metrics_title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(metrics_title), "<span size='12000' weight='bold' foreground='#2c3e50'>📊 Performance Metrics</span>");
     gtk_widget_set_halign(metrics_title, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(metrics_view), metrics_title, FALSE, FALSE, 0);
     
-    // 2x2 Grid for metrics
     GtkWidget *metrics_grid = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(metrics_grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(metrics_grid), 10);
@@ -930,7 +751,6 @@ void create_window() {
     gtk_grid_set_column_homogeneous(GTK_GRID(metrics_grid), TRUE);
     gtk_box_pack_start(GTK_BOX(metrics_view), metrics_grid, FALSE, FALSE, 5);
     
-    // Card 1: Average Wait Time (top-left)
     GtkWidget *wait_card = gtk_frame_new(NULL);
     GtkWidget *wait_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(wait_box), 10);
@@ -952,7 +772,6 @@ void create_window() {
     
     gtk_grid_attach(GTK_GRID(metrics_grid), wait_card, 0, 0, 1, 1);
     
-    // Card 2: Average TAT (top-right)
     GtkWidget *tat_card = gtk_frame_new(NULL);
     GtkWidget *tat_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(tat_box), 10);
@@ -974,7 +793,6 @@ void create_window() {
     
     gtk_grid_attach(GTK_GRID(metrics_grid), tat_card, 1, 0, 1, 1);
     
-    // Card 3: CPU Utilizationization (bottom-left)
     GtkWidget *cpu_card = gtk_frame_new(NULL);
     GtkWidget *cpu_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(cpu_box), 10);
@@ -991,7 +809,6 @@ void create_window() {
     
     gtk_grid_attach(GTK_GRID(metrics_grid), cpu_card, 0, 1, 1, 1);
     
-    // Card 4: Status (bottom-right)
     GtkWidget *status_card = gtk_frame_new(NULL);
     GtkWidget *status_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(status_box), 10);
@@ -1015,7 +832,6 @@ void create_window() {
     
     gtk_box_pack_start(GTK_BOX(main_vbox), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 5);
     
-    // Control panel
     GtkWidget *control_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 15);
     gtk_widget_set_halign(control_box, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(main_vbox), control_box, FALSE, FALSE, 0);
@@ -1023,7 +839,6 @@ void create_window() {
     gtk_box_pack_start(GTK_BOX(control_box), gtk_label_new("Policy:"), FALSE, FALSE, 0);
     policy_combo = gtk_combo_box_text_new();
     
-    // Dynamically populate the combo box with registered policies
     int policy_count = 0;
     const char** policy_names = get_available_policies(&policy_count);
     for (int i = 0; i < policy_count; i++) {
@@ -1038,7 +853,7 @@ void create_window() {
     quantum_entry = gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(quantum_entry), "2");
     gtk_entry_set_width_chars(GTK_ENTRY(quantum_entry), 5);
-    gtk_widget_set_sensitive(quantum_entry, FALSE);  // Initially disabled (FIFO selected)
+    gtk_widget_set_sensitive(quantum_entry, FALSE);  
     gtk_box_pack_start(GTK_BOX(control_box), quantum_entry, FALSE, FALSE, 0);
     
     gtk_box_pack_start(GTK_BOX(control_box), gtk_separator_new(GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 10);
@@ -1105,8 +920,7 @@ int main(int argc, char *argv[]) {
     sim_state.process_count = initial_process_count;
     
     gtk_init(&argc, &argv);
-
-    // Register all available scheduling policies before creating the window
+    
     register_all_policies();
     
     create_window();

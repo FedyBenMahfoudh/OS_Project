@@ -69,20 +69,17 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // 6. Display Results
     printf("✅ Simulation Completed!\n\n");
     printf("📊 Performance Metrics:\n");
     printf("   - Average Waiting Time    : %.2f units\n", results->average_waiting_time);
     printf("   - Average Turnaround Time : %.2f units\n", results->average_turnaround_time);
     printf("   - CPU Utilization         : %.2f %%\n", results->cpu_utilization);
     
-    // Display Gantt chart
     if (results->gantt_chart) {
         printf("\n📈 Gantt Chart:\n");
         print_gantt_chart(results);
     }
 
-    // 7. Cleanup
     free_simulation_results(results);
     free(selected_policy);
 
