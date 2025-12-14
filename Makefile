@@ -149,4 +149,10 @@ clean:
 rebuild: clean all
 
 # Declare targets that are not files
-.PHONY: all run clean rebuild test tui gui
+.PHONY: all run clean rebuild test tui gui install-dependencies
+
+install-dependencies:
+	@echo "Installing system dependencies (requires sudo)..."
+	sudo apt-get update
+	sudo apt-get install -y build-essential git libncurses5-dev libgtk-3-dev
+	@echo "Dependencies installed successfully."
